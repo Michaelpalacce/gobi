@@ -34,4 +34,17 @@ Go Bi-Directional Sync With API
 
 - MongoDB will be utilized for a database.
 - The free tier of mongodb will be used on the cloud to simplify the deployment.
-- The connection string will be passed as an environment variable
+- The connection string will be passed as an environment variable.
+
+#### Scalability
+
+- MongoDB supports sharding and can horizontally scale if needed
+
+#### Performance
+
+- The data stored in MongoDB will be files metadata.
+- Limited growth is expected even with millions of files.
+
+#### Hardware Requirements
+
+- Since I want gobi to be deployed even in hardware challenged environments, we need the database to not have a big footprint.
