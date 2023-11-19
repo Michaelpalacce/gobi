@@ -37,3 +37,19 @@ func (h UsersHandler) CreateUser(c *gin.Context) {
 
 	c.Data(http.StatusCreated, "application/json", []byte{})
 }
+
+func (h UsersHandler) DeleteUser(c *gin.Context) {
+	id := c.Param("id")
+	h.Service.DeleteUser(id)
+}
+
+func (h UsersHandler) GetUser(c *gin.Context) {
+	id := c.Param("id")
+	user, err := h.Service.GetUser(id)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to fetch user: %s", err).Error()})
+	}
+
+	c.JSON(http.StatusOK, user)
+}

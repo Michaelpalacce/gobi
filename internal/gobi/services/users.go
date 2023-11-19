@@ -9,6 +9,7 @@ import (
 	"github.com/Michaelpalacce/gobi/internal/gobi/models"
 	"github.com/Michaelpalacce/gobi/pkg/gobi/database"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -46,9 +47,9 @@ func (u UsersService) CreateUser(user *models.User) error {
 		return fmt.Errorf("error while inserting record: %s, error was %s", user.Username, err)
 	}
 
-	user.InsertedID = insertResult.InsertedID
+	user.ID = insertResult.InsertedID
 
-	slog.Debug("User Created", "ID", user.InsertedID)
+	slog.Debug("User Created", "ID", user.ID)
 
 	return nil
 }
@@ -56,12 +57,43 @@ func (u UsersService) CreateUser(user *models.User) error {
 // DeleteUser deletes the user given the ID.
 // If the user doesn't exist, does nothing.
 func (u UsersService) DeleteUser(id string) error {
-	slog.Info("Deleting user", "id", id)
+	slog.Debug("Deleting user", "id", id)
+	userCollection := u.DB.Collections.UsersCollection
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	objectId, err := primitive.ObjectIDFromHex(id)
+
+	if err != nil {
+		return err
+	}
+
+	userCollection.DeleteOne(ctx, bson.D{{Key: "_id", Value: objectId}})
+
 	return nil
 }
 
 // GetUser will return the user, given an ID.
 // If the user does not exist, then an error will be returned.
 func (u UsersService) GetUser(id string) (*models.User, error) {
-	return &models.User{}, nil
+	userCollection := u.DB.Collections.UsersCollection
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var user = &models.User{}
+	objectId, err := primitive.ObjectIDFromHex(id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = userCollection.FindOne(ctx, bson.D{{Key: "_id", Value: objectId}}).Decode(user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, err
 }

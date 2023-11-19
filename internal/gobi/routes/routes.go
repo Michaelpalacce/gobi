@@ -16,6 +16,8 @@ func SetupRouter(
 	userRoutes := r.Group("/users")
 	{
 		userRoutes.POST("/", userHandler.CreateUser)
+        userRoutes.DELETE("/:id", userHandler.DeleteUser)
+        userRoutes.GET("/:id", userHandler.GetUser)
 	}
 
 	// Items routes
