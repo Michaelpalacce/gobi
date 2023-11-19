@@ -48,3 +48,7 @@ Go Bi-Directional Sync With API
 #### Hardware Requirements
 
 - Since I want gobi to be deployed even in hardware challenged environments, we need the database to not have a big footprint.
+
+### Authentication
+
+- https://github.com/gin-gonic/gin/blob/master/docs/doc.md#using-basicauth-middleware can be used potentially

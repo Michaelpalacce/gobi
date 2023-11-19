@@ -19,10 +19,10 @@ func NewDatabase() (*Database, error) {
 	}
 
 	if err := database.Init(); err != nil {
-        return nil, err
+		return nil, err
 	}
 
-    return &database, nil
+	return &database, nil
 }
 
 type Database struct {
