@@ -15,9 +15,10 @@ import (
 // Database contains the mongo client and helpers to auth and execute queries
 type Database struct {
 	Client      *mongo.Client
-	Initialized bool
+	Collections collections
 
-	databaseName string
+	Initialized  bool
+	DatabaseName string
 }
 
 // NewDatabase will create a new instance of Database and connecta to MongoDB
@@ -26,28 +27,22 @@ func NewDatabase() (*Database, error) {
 		Initialized: false,
 	}
 
-	if err := database.Init(); err != nil {
+	if err := database.Connect(); err != nil {
 		return nil, err
 	}
 
 	return &database, nil
 }
 
-// Init validates that everything needed is present.
+// Connect validates that everything needed is present.
 // It will also Ping the mongoDB instance
-func (d *Database) Init() error {
+func (d *Database) Connect() error {
 	if d.Initialized {
 		return nil
 	}
 
-	tokens := []string{"MONGO_CONNECTION_STRING", "MONGO_DATABASE"}
-
-	for _, token := range tokens {
-		_, exists := os.LookupEnv(token)
-
-		if !exists {
-			return fmt.Errorf("%s not set", token)
-		}
+	if err := d.checkEnv(); err != nil {
+		return err
 	}
 
 	// Use the SetServerAPIOptions() method to set the Stable API version to 1
@@ -64,17 +59,32 @@ func (d *Database) Init() error {
 	}
 
 	d.Client = client
-	d.databaseName = os.Getenv("MONGO_DATABASE")
 
 	if err := d.Ping(); err != nil {
 		return err
 	}
 
+	d.DatabaseName = os.Getenv("MONGO_DATABASE")
+	d.Collections = newCollections(d)
 	d.Initialized = true
 
-	slog.Info("Connection to the Database was successful.", "Database", d.databaseName)
+	slog.Info("Connection to the Database was successful.")
 
 	return nil
+}
+
+// Disconnects the MongoDB Database
+func (d *Database) Disconnect() {
+	slog.Info("Disconnecting from Database")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := d.Client.Disconnect(ctx); err != nil {
+		panic(err)
+	}
+
+	d.Initialized = false
 }
 
 // Ping will send a ping request to the MongoDB Instance
@@ -86,19 +96,22 @@ func (d Database) Ping() error {
 		return err
 	}
 
-	slog.Debug("MongoDB pinged", "databaseName", d.databaseName)
+	slog.Debug("MongoDB pinged")
 
 	return nil
 }
 
-// Disconnects the MongoDB Database
-func (d Database) Disconnect() {
-	slog.Info("Disconnecting from Database", "databaseName", d.databaseName)
+// checkEnv will check if all the needed environment properties are set and return an error if they are not set
+func (d Database) checkEnv() error {
+	tokens := []string{"MONGO_CONNECTION_STRING", "MONGO_DATABASE"}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	for _, token := range tokens {
+		_, exists := os.LookupEnv(token)
 
-	if err := d.Client.Disconnect(ctx); err != nil {
-		panic(err)
+		if !exists {
+			return fmt.Errorf("%s not set", token)
+		}
 	}
+
+	return nil
 }

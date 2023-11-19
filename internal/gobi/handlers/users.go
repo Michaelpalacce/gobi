@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/Michaelpalacce/gobi/internal/gobi/models"
@@ -20,16 +21,17 @@ func NewUsersHandler(service *services.UsersService) *UsersHandler {
 }
 
 // CreateUser will insert the given user in the database.
+// Returns 201 if the user is created successfully
 func (h UsersHandler) CreateUser(c *gin.Context) {
-	var user models.User
+	var user = &models.User{}
 
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+	if err := c.ShouldBindJSON(user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to bind user: %s", err).Error()})
 		return
 	}
 
 	if err := h.Service.CreateUser(user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to create user: %s", err).Error()})
 		return
 	}
 

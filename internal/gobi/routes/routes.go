@@ -18,5 +18,11 @@ func SetupRouter(
 		userRoutes.POST("/", userHandler.CreateUser)
 	}
 
+	// Items routes
+	itemRoutes := r.Group("/items")
+	{
+		itemRoutes.POST("/", itemsHandler.AddItem)
+	}
+
 	return r
 }
