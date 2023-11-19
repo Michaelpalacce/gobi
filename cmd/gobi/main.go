@@ -22,11 +22,16 @@ func main() {
 	defer db.Disconnect()
 
 	usersHandler := *handlers.NewUsersHandler(
-		services.NewUserService(db),
+		services.NewUsersService(db),
+	)
+
+	itemHandler := *handlers.NewItemsHandler(
+		services.NewItemsService(db),
 	)
 
 	r := routes.SetupRouter(
 		usersHandler,
+		itemHandler,
 	)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")

@@ -9,11 +9,11 @@ import (
 )
 
 type UsersHandler struct {
-	Service *services.UserService
+	Service *services.UsersService
 }
 
 // NewUsersHandler will instantiate a new UsersHandler given the UserService
-func NewUsersHandler(service *services.UserService) *UsersHandler {
+func NewUsersHandler(service *services.UsersService) *UsersHandler {
 	return &UsersHandler{
 		Service: service,
 	}

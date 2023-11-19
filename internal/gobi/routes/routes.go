@@ -6,7 +6,10 @@ import (
 )
 
 // SetupRouter configures the application routes.
-func SetupRouter(userHandler handlers.UsersHandler) *gin.Engine {
+func SetupRouter(
+	userHandler handlers.UsersHandler,
+	itemsHandler handlers.ItemsHandler,
+) *gin.Engine {
 	r := gin.Default()
 
 	// User routes
