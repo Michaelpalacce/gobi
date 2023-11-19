@@ -1,4 +1,4 @@
-# gobis Internals
+# Internals
 
 - `handlers`: Handle HTTP requests, interact with services, and return HTTP responses.
 - `middleware`: Implement middleware functions that can be used by the Gin router.

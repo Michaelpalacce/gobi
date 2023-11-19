@@ -12,6 +12,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+// Database contains the mongo client and helpers to auth and execute queries
+type Database struct {
+	Client      *mongo.Client
+	Initialized bool
+
+	databaseName string
+}
+
 // NewDatabase will create a new instance of Database and connecta to MongoDB
 func NewDatabase() (*Database, error) {
 	database := Database{
@@ -23,13 +31,6 @@ func NewDatabase() (*Database, error) {
 	}
 
 	return &database, nil
-}
-
-type Database struct {
-	Client      *mongo.Client
-	Initialized bool
-
-	databaseName string
 }
 
 // Init validates that everything needed is present.
