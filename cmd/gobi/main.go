@@ -2,10 +2,11 @@ package main
 
 import (
 	"log"
-	"net/http"
 
+	"github.com/Michaelpalacce/gobi/internal/gobi/handlers"
+	"github.com/Michaelpalacce/gobi/internal/gobi/routes"
+	"github.com/Michaelpalacce/gobi/internal/gobi/services"
 	"github.com/Michaelpalacce/gobi/pkg/gobi/database"
-	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -20,18 +21,13 @@ func main() {
 
 	defer db.Disconnect()
 
-	r := gin.Default()
+	usersHandler := *handlers.NewUsersHandler(
+		services.NewUserService(db),
+	)
 
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
-		})
-	})
-
-	r.GET("/user/:name", func(c *gin.Context) {
-		name := c.Param("name")
-		c.String(http.StatusOK, "Hello %s", name)
-	})
+	r := routes.SetupRouter(
+		usersHandler,
+	)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }

@@ -5,8 +5,8 @@ Go Bi-Directional Sync With API
 ## Roadmap
 
 - [x] Database
-- [ ] Project design and structure
-- [ ] Authentication and session management with the help of Redis
+- [x] Project design and structure
+- [ ] Basic Authentication
 - [ ] Encryption at rest
 - [ ] Multiple Targets
 - [ ] Storage Driver Interface
