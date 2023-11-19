@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"log"
+
 	"github.com/Michaelpalacce/gobi/internal/gobi/services"
 	"github.com/gin-gonic/gin"
 )
@@ -17,5 +19,5 @@ func NewItemsHandler(service *services.ItemsService) *ItemsHandler {
 }
 
 func (h *ItemsHandler) AddItem(c *gin.Context) {
-
+    log.Print("ADDING!")
 }

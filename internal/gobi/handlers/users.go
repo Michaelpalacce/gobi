@@ -7,6 +7,7 @@ import (
 	"github.com/Michaelpalacce/gobi/internal/gobi/models"
 	"github.com/Michaelpalacce/gobi/internal/gobi/services"
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type UsersHandler struct {
@@ -22,6 +23,7 @@ func NewUsersHandler(service *services.UsersService) *UsersHandler {
 
 // CreateUser will insert the given user in the database.
 // Returns 201 if the user is created successfully
+// The password will be hashed, so we don't store it
 func (h UsersHandler) CreateUser(c *gin.Context) {
 	var user = &models.User{}
 
@@ -35,21 +37,19 @@ func (h UsersHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	c.Data(http.StatusCreated, "application/json", []byte{})
+	c.JSON(http.StatusCreated, bson.D{{Key: "_id", Value: user.ID}})
 }
 
+// DeleteUser will delete the user if it exists. If it does not exist, it will do nothing, but still return 200
+// TODO: Only delete current user
+// TODO: Delete user files and metadata in the future
 func (h UsersHandler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
-	h.Service.DeleteUser(id)
-}
 
-func (h UsersHandler) GetUser(c *gin.Context) {
-	id := c.Param("id")
-	user, err := h.Service.GetUser(id)
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to fetch user: %s", err).Error()})
+	if err := h.Service.DeleteUser(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to delete user: %s", err).Error()})
+		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	c.Data(http.StatusOK, "application/json", []byte{})
 }

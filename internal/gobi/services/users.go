@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Michaelpalacce/gobi/internal/gobi/models"
+	"github.com/Michaelpalacce/gobi/pkg/digest"
 	"github.com/Michaelpalacce/gobi/pkg/gobi/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -31,6 +32,7 @@ func NewUsersService(db *database.Database) *UsersService {
 // Will return an error if the user already exists or other issues happen
 func (u UsersService) CreateUser(user *models.User) error {
 	slog.Debug("Creating a new user", "user", user.Username)
+
 	userCollection := u.DB.Collections.UsersCollection
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -41,6 +43,10 @@ func (u UsersService) CreateUser(user *models.User) error {
 	if result.Err() != mongo.ErrNoDocuments {
 		return fmt.Errorf("user exists")
 	}
+
+	// Set a new ObjectID for the user's _id field
+	user.ID = primitive.NewObjectID()
+	user.Password = digest.SHA256(user.Password)
 
 	insertResult, err := userCollection.InsertOne(ctx, user)
 	if err != nil {
@@ -90,6 +96,24 @@ func (u UsersService) GetUser(id string) (*models.User, error) {
 	}
 
 	err = userCollection.FindOne(ctx, bson.D{{Key: "_id", Value: objectId}}).Decode(user)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, err
+}
+
+//GetUserByName will retrieve a user object given the username. Usernames should be unique
+func (u UsersService) GetUserByName(username string) (*models.User, error) {
+	userCollection := u.DB.Collections.UsersCollection
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	var user = &models.User{}
+
+    err := userCollection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(user)
 
 	if err != nil {
 		return nil, err
