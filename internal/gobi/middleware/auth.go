@@ -10,6 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// This represents the current Authentication Strategy
+func Auth(userService *services.UsersService) gin.HandlerFunc {
+    return BasicAuth(userService)
+}
+
 func BasicAuth(userService *services.UsersService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Extract Authorization header

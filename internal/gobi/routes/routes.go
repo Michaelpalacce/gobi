@@ -13,18 +13,18 @@ func SetupRouter(
 ) *gin.Engine {
 	r := gin.Default()
 
-	basicAuthMiddleware := middleware.BasicAuth(userHandler.Service)
+	authMiddleware := middleware.Auth(userHandler.Service)
 
 	// User routes
 	userRoutes := r.Group("/users")
 	{
 		userRoutes.POST("/", userHandler.CreateUser)
-		userRoutes.DELETE("/", basicAuthMiddleware, userHandler.DeleteUser)
+		userRoutes.DELETE("/", authMiddleware, userHandler.DeleteUser)
 	}
 
 	// Items routes
 	itemRoutes := r.Group("/items")
-	itemRoutes.Use(basicAuthMiddleware)
+	itemRoutes.Use(authMiddleware)
 	{
 		itemRoutes.POST("/", itemsHandler.AddItem)
 	}

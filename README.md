@@ -6,13 +6,13 @@ Go Bi-Directional Sync With API
 
 - [x] Database
 - [x] Project design and structure
-- [ ] Basic Authentication
-- [ ] Encryption at rest
-- [ ] Multiple Targets
+- [x] Basic Authentication
 - [ ] Storage Driver Interface
 - [ ] Local Storage Driver
 - [ ] File Uploading
 - [ ] File Pushing
+- [ ] Encryption at rest
+- [ ] Multiple Targets
 - [ ] Bi-Directional Syncing
 - [ ] Versioning
 - [ ] Deletion resolution
