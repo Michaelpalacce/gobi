@@ -61,6 +61,8 @@ func BasicAuth(userService *services.UsersService) gin.HandlerFunc {
 			return
 		}
 
+		c.Set("user", user)
+
 		// Continue with the next middleware or route handler
 		c.Next()
 	}

@@ -53,7 +53,12 @@ func (u UsersService) CreateUser(user *models.User) error {
 		return fmt.Errorf("error while inserting record: %s, error was %s", user.Username, err)
 	}
 
-	user.ID = insertResult.InsertedID
+	id, ok := insertResult.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return fmt.Errorf("error while type casting InsertedID")
+	}
+
+	user.ID = id
 
 	slog.Debug("User Created", "ID", user.ID)
 
@@ -104,7 +109,7 @@ func (u UsersService) GetUser(id string) (*models.User, error) {
 	return user, err
 }
 
-//GetUserByName will retrieve a user object given the username. Usernames should be unique
+// GetUserByName will retrieve a user object given the username. Usernames should be unique
 func (u UsersService) GetUserByName(username string) (*models.User, error) {
 	userCollection := u.DB.Collections.UsersCollection
 
@@ -113,7 +118,7 @@ func (u UsersService) GetUserByName(username string) (*models.User, error) {
 
 	var user = &models.User{}
 
-    err := userCollection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(user)
+	err := userCollection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(user)
 
 	if err != nil {
 		return nil, err

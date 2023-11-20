@@ -41,12 +41,22 @@ func (h UsersHandler) CreateUser(c *gin.Context) {
 }
 
 // DeleteUser will delete the user if it exists. If it does not exist, it will do nothing, but still return 200
-// TODO: Only delete current user
 // TODO: Delete user files and metadata in the future
 func (h UsersHandler) DeleteUser(c *gin.Context) {
-	id := c.Param("id")
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
 
-	if err := h.Service.DeleteUser(id); err != nil {
+	// Assert the user type
+	userObject, ok := user.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user"})
+		return
+	}
+
+	if err := h.Service.DeleteUser(userObject.ID.Hex()); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to delete user: %s", err).Error()})
 		return
 	}

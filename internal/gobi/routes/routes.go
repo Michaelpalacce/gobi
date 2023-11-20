@@ -19,7 +19,7 @@ func SetupRouter(
 	userRoutes := r.Group("/users")
 	{
 		userRoutes.POST("/", userHandler.CreateUser)
-		userRoutes.DELETE("/:id", basicAuthMiddleware, userHandler.DeleteUser)
+		userRoutes.DELETE("/", basicAuthMiddleware, userHandler.DeleteUser)
 	}
 
 	// Items routes
