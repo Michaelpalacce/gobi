@@ -12,7 +12,7 @@ import (
 
 // This represents the current Authentication Strategy
 func Auth(userService *services.UsersService) gin.HandlerFunc {
-    return BasicAuth(userService)
+	return BasicAuth(userService)
 }
 
 func BasicAuth(userService *services.UsersService) gin.HandlerFunc {

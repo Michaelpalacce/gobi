@@ -12,24 +12,26 @@ func SetupRouter(
 	itemsHandler handlers.ItemsHandler,
 	websocketHandler handlers.WebsocketHandler,
 ) *gin.Engine {
+	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 
 	authMiddleware := middleware.Auth(userHandler.Service)
 
-	// User routes
+	// User Routes
 	userRoutes := r.Group("/users")
 	{
 		userRoutes.POST("/", userHandler.CreateUser)
 		userRoutes.DELETE("/", authMiddleware, userHandler.DeleteUser)
 	}
 
+	// Websocket Routes
 	websocketRoutes := r.Group("/ws")
 	websocketRoutes.Use(authMiddleware)
 	{
-		websocketRoutes.GET("", websocketHandler.Establish)
+		websocketRoutes.GET("/", websocketHandler.Establish)
 	}
 
-	// Items routes
+	// Items Routes
 	itemRoutes := r.Group("/items")
 	itemRoutes.Use(authMiddleware)
 	{

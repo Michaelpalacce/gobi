@@ -29,7 +29,9 @@ func main() {
 		services.NewItemsService(db),
 	)
 
-	websocketHandler := *handlers.NewWebsocketHandler()
+	websocketHandler := *handlers.NewWebsocketHandler(
+		services.NewWebsocketService(),
+	)
 
 	r := routes.SetupRouter(
 		usersHandler,
