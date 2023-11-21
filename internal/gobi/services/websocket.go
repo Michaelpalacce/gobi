@@ -1,58 +1,45 @@
 package services
 
 import (
-	"log"
 	"log/slog"
 	"sync"
 
+	"github.com/Michaelpalacce/gobi/pkg/gobi/sockets"
 	"github.com/gorilla/websocket"
 )
 
 // connectedClientsMutex is a mutex so we can register only one client at a time
 var connectedClientsMutex sync.Mutex
 
-// Client represents a connected WebSocket client
-type Client struct {
-	conn *websocket.Conn
-	// Add any other fields you need for tracking the client
-}
-
 // WebsocketService handles the connection between the server and the clients
 type WebsocketService struct {
 	// connectedClients is a map of all the connected clients
-	connectedClients map[*Client]bool
+	connectedClients map[*sockets.Client]bool
 }
 
 func NewWebsocketService() WebsocketService {
 	return WebsocketService{
-		connectedClients: make(map[*Client]bool),
+		connectedClients: make(map[*sockets.Client]bool),
 	}
 }
 
+// HandleConnection will register a new client and send a Welcome Message
 func (s *WebsocketService) HandleConnection(conn *websocket.Conn) {
-	client := &Client{conn: conn}
+	client := &sockets.Client{Conn: conn}
 
 	s.registerClient(client)
 
-	// Handle incoming messages
-	go s.readMessages(client)
+	defer s.unregisterClient(client)
 
-	// Example: Send a welcome message to the connected client
-	err := conn.WriteMessage(websocket.TextMessage, []byte("OK"))
-
-	if err != nil {
-		slog.Error("Error sending welcome message", "error", err)
-		return
-	}
+	s.readMessages(client)
 }
 
-// readMessages reads incoming messages from the client
-func (s *WebsocketService) readMessages(client *Client) {
+func (s *WebsocketService) readMessages(client *sockets.Client) {
 	for {
-		_, _, err := client.conn.ReadMessage()
+		_, _, err := client.Conn.ReadMessage()
 		// messageType, p, err := client.conn.ReadMessage()
 		if err != nil {
-			log.Println("Error reading message:", err)
+			slog.Error("error reading message", "err", err)
 			break
 		}
 
@@ -62,16 +49,21 @@ func (s *WebsocketService) readMessages(client *Client) {
 }
 
 // registerClient registers a client
-func (s *WebsocketService) registerClient(client *Client) {
+func (s *WebsocketService) registerClient(client *sockets.Client) {
 	connectedClientsMutex.Lock()
+
+	client.Init()
 
 	defer connectedClientsMutex.Unlock()
 	s.connectedClients[client] = true
 }
 
 // unregisterClient unregisters a client
-func (s *WebsocketService) unregisterClient(client *Client) {
+func (s *WebsocketService) unregisterClient(client *sockets.Client) {
 	connectedClientsMutex.Lock()
+
+	client.Close()
+
 	defer connectedClientsMutex.Unlock()
 	delete(s.connectedClients, client)
 }

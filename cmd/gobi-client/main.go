@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -17,8 +18,8 @@ import (
 )
 
 func main() {
+	// establish connection to the server
 	conn := establishConn()
-
 	defer conn.Close()
 
 	// Set up a channel to handle signals for graceful shutdown
@@ -63,7 +64,6 @@ func establishConn() *websocket.Conn {
 	dialer := websocket.DefaultDialer
 
 	// Establish a WebSocket connection with headers
-	// Establish a WebSocket connection with headers
 	conn, resp, websocketErr := dialer.Dial(url.String(), header)
 	if websocketErr != nil {
 		// Read and print the body content
@@ -84,6 +84,7 @@ func basicAuth(username, password string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
+// shutdown will attempt to gracefully shut down a connection when the client is killed
 func shutdown(conn *websocket.Conn) {
 	log.Println("Interrupt signal received, closing WebSocket connection...")
 	// Close the WebSocket connection gracefully
@@ -103,6 +104,7 @@ func readMessages(conn *websocket.Conn) {
 			log.Println("Error reading message:", err)
 			break
 		}
+		conn.WriteMessage(websocket.TextMessage, json.RawMessage(`{"version":0,"type":"version","payload":{"version":1}}`))
 		fmt.Printf("Received message: %s\n", message)
 	}
 }
