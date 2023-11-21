@@ -10,6 +10,7 @@ import (
 func SetupRouter(
 	userHandler handlers.UsersHandler,
 	itemsHandler handlers.ItemsHandler,
+	websocketHandler handlers.WebsocketHandler,
 ) *gin.Engine {
 	r := gin.Default()
 
@@ -20,6 +21,12 @@ func SetupRouter(
 	{
 		userRoutes.POST("/", userHandler.CreateUser)
 		userRoutes.DELETE("/", authMiddleware, userHandler.DeleteUser)
+	}
+
+	websocketRoutes := r.Group("/ws")
+	websocketRoutes.Use(authMiddleware)
+	{
+		websocketRoutes.GET("", websocketHandler.Establish)
 	}
 
 	// Items routes

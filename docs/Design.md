@@ -26,3 +26,9 @@
 ## Authentication
 
 - https://github.com/gin-gonic/gin/blob/master/docs/doc.md#using-basicauth-middleware can be used potentially
+
+## Sync
+
+- To achieve bi-directional syncing, we'll implement a versioning system.
+  - Store changes to a file as metadata
+  - Store the versions of the file as well
