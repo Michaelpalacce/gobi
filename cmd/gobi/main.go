@@ -7,9 +7,12 @@ import (
 	"github.com/Michaelpalacce/gobi/internal/gobi/routes"
 	"github.com/Michaelpalacce/gobi/internal/gobi/services"
 	"github.com/Michaelpalacce/gobi/pkg/gobi/database"
+	"github.com/Michaelpalacce/gobi/pkg/logger"
 )
 
 func main() {
+	logger.ConfigureLogging()
+
 	var (
 		db  *database.Database
 		err error
