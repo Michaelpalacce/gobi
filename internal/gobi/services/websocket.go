@@ -26,20 +26,18 @@ func NewWebsocketService() WebsocketService {
 func (s *WebsocketService) registerClient(client *sockets.Client) {
 	connectedClientsMutex.Lock()
 
-	client.Init()
+	s.connectedClients[client] = true
 
 	defer connectedClientsMutex.Unlock()
-	s.connectedClients[client] = true
 }
 
 // unregisterClient unregisters a client
 func (s *WebsocketService) unregisterClient(client *sockets.Client) {
 	connectedClientsMutex.Lock()
 
-	client.Close("")
+	delete(s.connectedClients, client)
 
 	defer connectedClientsMutex.Unlock()
-	delete(s.connectedClients, client)
 }
 
 // HandleConnection will register a new client and send a Welcome Message
@@ -47,8 +45,13 @@ func (s *WebsocketService) HandleConnection(conn *websocket.Conn) {
 	client := &sockets.Client{Conn: conn}
 
 	s.registerClient(client)
-
 	defer s.unregisterClient(client)
 
-	client.Init()
+	err := client.Listen()
+
+	if err != nil {
+		client.Close(err.Error())
+	}
+
+	client.Close("")
 }

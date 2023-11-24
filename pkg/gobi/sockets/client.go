@@ -17,48 +17,63 @@ type Client struct {
 	// Add any other fields you need for tracking the client
 }
 
-// Init will fetch information about the user. Make sure to call this first
-func (c *Client) Init() {
+// Listen will fetch initial information from the client and then listen for more data.
+func (c *Client) Listen() error {
 	if err := c.sendMessage(messages.NewVersionRequestPayloadMessage()); err != nil {
 		slog.Error("Error while trying to get version to use", "err", err)
-		return
+		return nil
 	}
 
-	c.readMessage()
+	return c.readMessage()
 }
 
 // readMessage will continuously wait for incomming messages and process them for the given client
 // This message is blocking and will continue when close is called
-func (c *Client) readMessage() {
+func (c *Client) readMessage() error {
+	var closeError error
+
 out:
 	for {
 		messageType, message, err := c.Conn.ReadMessage()
 
 		if err != nil {
-			c.Close(fmt.Sprintf("error reading message: %", err))
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+				// The other side has closed the connection gracefully
+				fmt.Println("Connection closed by the client.")
+				break out
+			}
+
+			// Handle other errors
+			closeError = fmt.Errorf("error reading message: %s", err)
 			break out
 		}
 
 		switch messageType {
 		case websocket.TextMessage:
-			c.processTextMessage(message)
+			if closeError = c.processTextMessage(message); closeError != nil {
+				break out
+			}
 		case websocket.BinaryMessage:
+			if closeError = c.processBinaryMessage(message); closeError != nil {
+				break out
+			}
 		case websocket.PingMessage:
-			err := c.Conn.WriteMessage(websocket.PongMessage, []byte(""))
-
-			if err != nil {
-				c.Close(fmt.Sprintf("error sending message: %s", err))
+			if err := c.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
+				closeError = fmt.Errorf("error sending message: %s", err)
 				break out
 			}
 		case websocket.PongMessage:
 			// Do nothing, it's just a response
 		case websocket.CloseMessage:
-			c.Close("")
 			break out
 		default:
 			// Do nothing, we don't know what this is.
+			closeError = fmt.Errorf("error, unknown message type %d", messageType)
+			break out
 		}
 	}
+
+	return closeError
 }
 
 // processTextMessage will process different types of text messages
@@ -71,7 +86,13 @@ func (c *Client) processTextMessage(message []byte) error {
 
 	switch websocketResponse.Version {
 	case 0:
+		if err := c.processV0(websocketResponse); err != nil {
+			return err
+		}
 	case 1:
+		if err := c.processV1(websocketResponse); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown websocket version: %d", websocketResponse.Version)
 	}
