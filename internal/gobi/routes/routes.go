@@ -31,12 +31,12 @@ func SetupRouter(
 		websocketRoutes.GET("/", websocketHandler.Establish)
 	}
 
-	// Items Routes
-	itemRoutes := r.Group("/items")
-	itemRoutes.Use(authMiddleware)
-	{
-		itemRoutes.POST("/", itemsHandler.AddItem)
-	}
+	// // Items Routes
+	// itemRoutes := r.Group("/items")
+	// itemRoutes.Use(authMiddleware)
+	// {
+	// 	itemRoutes.POST("/", itemsHandler.AddItem)
+	// }
 
 	return r
 }

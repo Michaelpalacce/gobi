@@ -1,7 +1,6 @@
 package services
 
 import (
-	"log/slog"
 	"sync"
 
 	"github.com/Michaelpalacce/gobi/pkg/gobi/sockets"
@@ -23,31 +22,6 @@ func NewWebsocketService() WebsocketService {
 	}
 }
 
-// HandleConnection will register a new client and send a Welcome Message
-func (s *WebsocketService) HandleConnection(conn *websocket.Conn) {
-	client := &sockets.Client{Conn: conn}
-
-	s.registerClient(client)
-
-	defer s.unregisterClient(client)
-
-	s.readMessages(client)
-}
-
-func (s *WebsocketService) readMessages(client *sockets.Client) {
-	for {
-		_, _, err := client.Conn.ReadMessage()
-		// messageType, p, err := client.conn.ReadMessage()
-		if err != nil {
-			slog.Error("error reading message", "err", err)
-			break
-		}
-
-		// // Handle the incoming message based on the messageType and content (p)
-		// handleMessage(client, messageType, p)
-	}
-}
-
 // registerClient registers a client
 func (s *WebsocketService) registerClient(client *sockets.Client) {
 	connectedClientsMutex.Lock()
@@ -62,8 +36,19 @@ func (s *WebsocketService) registerClient(client *sockets.Client) {
 func (s *WebsocketService) unregisterClient(client *sockets.Client) {
 	connectedClientsMutex.Lock()
 
-	client.Close()
+	client.Close("")
 
 	defer connectedClientsMutex.Unlock()
 	delete(s.connectedClients, client)
+}
+
+// HandleConnection will register a new client and send a Welcome Message
+func (s *WebsocketService) HandleConnection(conn *websocket.Conn) {
+	client := &sockets.Client{Conn: conn}
+
+	s.registerClient(client)
+
+	defer s.unregisterClient(client)
+
+	client.Init()
 }
