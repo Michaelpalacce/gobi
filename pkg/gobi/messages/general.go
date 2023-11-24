@@ -3,14 +3,21 @@ package messages
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/gorilla/websocket"
 )
 
 // Holds differnt message types
 var (
-	VersionResponse = "version"
+	VersionType = "version"
 
-	CloseRequest = "close"
+	CloseRequestTyep = "close"
 )
+
+type Client struct {
+	Conn    *websocket.Conn
+	Version int
+}
 
 // WebsocketMessage is the general WebsocketMessage that all requests and responses will follow.
 // The Payload will be the dynamic element
