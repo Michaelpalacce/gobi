@@ -8,7 +8,7 @@ type CloseRequestPayload struct {
 // NewCloseRequestPayloadMessage will return a new close request message
 func NewCloseRequestPayloadMessage(reason string) WebsocketMessage {
 	return WebsocketMessage{
-		Type: CloseRequestTyep,
+		Type: CloseRequestType,
 		Payload: CloseRequestPayload{
 			Reason: reason,
 		},
@@ -19,10 +19,10 @@ func NewCloseRequestPayloadMessage(reason string) WebsocketMessage {
 type VersionRequestPayload struct {
 }
 
-// NewClosePayloadMessage will return a new version request message
+// NewVersionRequestPayloadMessage will return a new version request message
 func NewVersionRequestPayloadMessage() WebsocketMessage {
 	return WebsocketMessage{
-		Type:    CloseRequestTyep,
+		Type:    VersionRequestType,
 		Payload: VersionRequestPayload{},
 		Version: 0,
 	}

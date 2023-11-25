@@ -2,39 +2,42 @@ package main
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
-	"time"
 
 	"io"
 
+	"github.com/Michaelpalacce/gobi/pkg/gobi-client/sockets"
+	"github.com/Michaelpalacce/gobi/pkg/logger"
 	"github.com/gorilla/websocket"
 )
 
 func main() {
+	logger.ConfigureLogging()
 	// establish connection to the server
-	conn := establishConn()
-	defer conn.Close()
+	client := sockets.WebsocketClient{
+		Version: 1, // TODO Make me dynamic
+		Conn:    establishConn(),
+	}
 
 	// Set up a channel to handle signals for graceful shutdown
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
 	// Start a goroutine to read messages from the WebSocket connection
-	go readMessages(conn)
+	go client.Listen()
 
 	// Wait for a signal to gracefully close the connection
 	<-interrupt
-	shutdown(conn)
+	client.Close("")
 }
 
 // establishConn will fetch the username and password from the arguments and establish a connection to the server
+// TODO: Move auth to the gobi-client
 func establishConn() *websocket.Conn {
 	// Define command-line flags for username and password
 	var (
@@ -43,7 +46,7 @@ func establishConn() *websocket.Conn {
 		password string
 	)
 
-	flag.StringVar(&host, "host", "", "Target host")
+	flag.StringVar(&host, "host", "localhost:8080", "Target host")
 	flag.StringVar(&username, "username", "", "Username for authentication")
 	flag.StringVar(&password, "password", "", "Password for authentication")
 
@@ -57,7 +60,7 @@ func establishConn() *websocket.Conn {
 	}
 
 	// Create a WebSocket connection URL
-	url := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/ws/"}
+	url := url.URL{Scheme: "ws", Host: host, Path: "/ws/"}
 	// Set up basic authentication
 	header := http.Header{"Authorization": []string{basicAuth(username, password)}}
 	// Create a WebSocket dialer
@@ -82,29 +85,4 @@ func establishConn() *websocket.Conn {
 func basicAuth(username, password string) string {
 	auth := username + ":" + password
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
-}
-
-// shutdown will attempt to gracefully shut down a connection when the client is killed
-func shutdown(conn *websocket.Conn) {
-	log.Println("Interrupt signal received, closing WebSocket connection...")
-	// Close the WebSocket connection gracefully
-	err := conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-	if err != nil {
-		log.Println("Error sending close message:", err)
-	}
-	time.Sleep(time.Second)
-	log.Println("Client shutdown complete.")
-}
-
-// readMessages is an infinite loop to listen for messages from the server
-func readMessages(conn *websocket.Conn) {
-	for {
-		_, message, err := conn.ReadMessage()
-		if err != nil {
-			log.Println("Error reading message:", err)
-			break
-		}
-		conn.WriteMessage(websocket.TextMessage, json.RawMessage(`{"version":0,"type":"version","payload":{"version":1}}`))
-		fmt.Printf("Received message: %s\n", message)
-	}
 }

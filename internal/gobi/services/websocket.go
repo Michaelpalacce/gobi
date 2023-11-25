@@ -1,6 +1,7 @@
 package services
 
 import (
+	"log/slog"
 	"sync"
 
 	"github.com/Michaelpalacce/gobi/pkg/gobi/sockets"
@@ -31,9 +32,15 @@ func (s *WebsocketService) HandleConnection(conn *websocket.Conn) {
 	s.registerClient(client)
 	defer s.unregisterClient(client)
 
-	err := client.Listen()
+	closeChannel := make(chan error, 1)
+	defer close(closeChannel)
+
+	go client.Listen(closeChannel)
+
+	err := <-closeChannel
 
 	if err != nil {
+		slog.Error("Closing connection due to error with client", "error", err)
 		client.Close(err.Error())
 	}
 

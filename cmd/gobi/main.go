@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"log/slog"
 
 	"github.com/Michaelpalacce/gobi/internal/gobi/handlers"
 	"github.com/Michaelpalacce/gobi/internal/gobi/routes"
@@ -17,6 +18,7 @@ func main() {
 		db  *database.Database
 		err error
 	)
+	slog.Info("Connecting to Database")
 
 	if db, err = database.NewDatabase(); err != nil {
 		log.Fatalf("Error while creating a new Database: %s", err)
