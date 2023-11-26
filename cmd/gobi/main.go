@@ -7,7 +7,7 @@ import (
 	"github.com/Michaelpalacce/gobi/internal/gobi/handlers"
 	"github.com/Michaelpalacce/gobi/internal/gobi/routes"
 	"github.com/Michaelpalacce/gobi/internal/gobi/services"
-	"github.com/Michaelpalacce/gobi/pkg/gobi/database"
+	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/logger"
 )
 
@@ -30,17 +30,12 @@ func main() {
 		services.NewUsersService(db),
 	)
 
-	itemHandler := *handlers.NewItemsHandler(
-		services.NewItemsService(db),
-	)
-
 	websocketHandler := *handlers.NewWebsocketHandler(
-		services.NewWebsocketService(),
+		services.NewWebsocketService(db),
 	)
 
 	r := routes.SetupRouter(
 		usersHandler,
-		itemHandler,
 		websocketHandler,
 	)
 

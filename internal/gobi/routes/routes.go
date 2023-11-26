@@ -9,7 +9,6 @@ import (
 // SetupRouter configures the application routes.
 func SetupRouter(
 	userHandler handlers.UsersHandler,
-	itemsHandler handlers.ItemsHandler,
 	websocketHandler handlers.WebsocketHandler,
 ) *gin.Engine {
 	gin.SetMode(gin.DebugMode)
@@ -30,13 +29,6 @@ func SetupRouter(
 	{
 		websocketRoutes.GET("/", websocketHandler.Establish)
 	}
-
-	// // Items Routes
-	// itemRoutes := r.Group("/items")
-	// itemRoutes.Use(authMiddleware)
-	// {
-	// 	itemRoutes.POST("/", itemsHandler.AddItem)
-	// }
 
 	return r
 }

@@ -70,10 +70,8 @@ out:
 		}
 
 		if conn, err = establishConn(options); err != nil {
-			slog.Error("Error while trying to establish connection to server", "error", err)
-			time.Sleep(5 * time.Second)
-
-			continue out
+			slog.Error("Error while trying to establish connection to server. Since no initial connection could be established, closing.", "error", err)
+			break out
 		}
 
 		// establish connection to the server
@@ -86,6 +84,7 @@ out:
 					VaultPath: vaultPath,
 					// TODO: Fetch me from somewhere... sqlite???
 					LastSync: 0,
+					// LastSync: 1701027954,
 				},
 				Conn: conn,
 			},

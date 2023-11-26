@@ -21,7 +21,8 @@ type Database struct {
 	DatabaseName string
 }
 
-// NewDatabase will create a new instance of Database and connecta to MongoDB
+// NewDatabase represents a singleton instance of Database.
+// It will initialize it and connect it to MongoDB
 func NewDatabase() (*Database, error) {
 	database := Database{
 		Initialized: false,

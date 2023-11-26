@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/Michaelpalacce/gobi/internal/gobi/services"
+	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -28,6 +29,19 @@ func NewWebsocketHandler(service services.WebsocketService) *WebsocketHandler {
 
 // Establish will establish a websocket connection
 func (h *WebsocketHandler) Establish(c *gin.Context) {
+	user, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Assert the user type
+	userObject, ok := user.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve user"})
+		return
+	}
+
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error trying to upgrade connection to websocket: %s", err).Error()})
@@ -35,5 +49,5 @@ func (h *WebsocketHandler) Establish(c *gin.Context) {
 	}
 
 	// Handle the WebSocket connection (e.g., register the connection, manage clients, etc.)
-	go h.service.HandleConnection(conn)
+	go h.service.HandleConnection(conn, *userObject)
 }

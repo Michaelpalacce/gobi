@@ -1,9 +1,12 @@
 package socket
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
@@ -147,24 +150,28 @@ func (c *ClientWebsocketClient) processV0(websocketMessage messages.WebsocketMes
 }
 
 // processBinaryMessage will process different types of binary messages
-// TODO: finish this
+// TODO: finish this. We need to send the file name as well as location here too
 func (c *ClientWebsocketClient) processBinaryMessage(message []byte) error {
-	var websocketMessage messages.WebsocketMessage
+	fmt.Println("Received binary message")
 
-	if err := json.Unmarshal(message, &websocketMessage); err != nil {
-		return fmt.Errorf("error while unmarshaling websocket response %s", err)
-	}
-
-	switch websocketMessage.Version {
-	case 1:
-		if err := v1.ProcessClientBinaryMessage(websocketMessage, c.Client); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unknown websocket version: %d", websocketMessage.Version)
+	// Save the received file
+	err := saveFile("received_file.txt", message)
+	if err != nil {
+		return fmt.Errorf("error saving file: %s", err)
 	}
 
 	return nil
+}
+
+func saveFile(filename string, data []byte) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = io.Copy(file, bytes.NewReader(data))
+	return err
 }
 
 // processPingMessage will send a PongMessage and nothing else

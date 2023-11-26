@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Michaelpalacce/gobi/internal/gobi/models"
 	"github.com/Michaelpalacce/gobi/internal/gobi/services"
+	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 )

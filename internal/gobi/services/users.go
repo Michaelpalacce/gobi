@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Michaelpalacce/gobi/internal/gobi/models"
+	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/digest"
-	"github.com/Michaelpalacce/gobi/pkg/gobi/database"
+	"github.com/Michaelpalacce/gobi/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

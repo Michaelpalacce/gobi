@@ -5,7 +5,9 @@ import (
 	"sync"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
+	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/gobi/socket"
+	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/gorilla/websocket"
 )
 
@@ -16,20 +18,28 @@ var connectedClientsMutex sync.Mutex
 type WebsocketService struct {
 	// connectedClients is a map of all the connected clients
 	connectedClients map[*socket.ServerWebsocketClient]bool
+
+	DB *database.Database
 }
 
-func NewWebsocketService() WebsocketService {
+func NewWebsocketService(db *database.Database) WebsocketService {
 	return WebsocketService{
 		connectedClients: make(map[*socket.ServerWebsocketClient]bool),
+		DB:               db,
 	}
 }
 
 // HandleConnection will register a new client and start listening for any messages
 // At the end, the client will be unregistered and the connection will be closed with
 // an Error message if one was present
-func (s *WebsocketService) HandleConnection(conn *websocket.Conn) {
+func (s *WebsocketService) HandleConnection(conn *websocket.Conn, user models.User) {
 	client := &socket.ServerWebsocketClient{Client: &client.WebsocketClient{
+		DB:   s.DB,
 		Conn: conn,
+
+		Client: client.Client{
+			User: user,
+		},
 	}}
 
 	s.registerClient(client)

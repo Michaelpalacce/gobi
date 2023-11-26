@@ -1,7 +1,7 @@
 package storage
 
 import (
-	"time"
+	"github.com/Michaelpalacce/gobi/pkg/models"
 )
 
 // Event holds information about a file operation.
@@ -9,16 +9,16 @@ import (
 type Event struct {
 }
 
-type File struct{}
+// Item represents metadata about an item
+type Item struct {
+	Item models.Item
+}
 
 // Driver interface holds the structure that all storage drivers must adhere to
 type Driver interface {
-	// Reconcile will give a list of changes from the given time until time.Now
-	Reconcile(lastSync time.Time) ([]Event, error)
-
 	// PushFile will push the given file to the server and set it as the latest reconciled version
-	PushFile(f File) error
+	PushFile(f Item) error
 
 	// PullFile will fetch a file from the server and have it sent out
-	PullFile(filePath string) (File, error)
+	PullFile(filePath string) (Item, error)
 }
