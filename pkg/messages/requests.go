@@ -1,13 +1,12 @@
 package messages
 
-// CloseRequestPayload is a payload with a message that is sent to the client
 type CloseRequestPayload struct {
 	Reason string `json:"reason"`
 }
 
-// NewCloseRequestPayloadMessage will return a new close request message
-func NewCloseRequestPayloadMessage(reason string) WebsocketMessage {
-	return WebsocketMessage{
+// NewCloseRequestMessage will return a new close request message
+func NewCloseRequestMessage(reason string) WebsocketRequest {
+	return WebsocketRequest{
 		Type: CloseRequestType,
 		Payload: CloseRequestPayload{
 			Reason: reason,
@@ -19,9 +18,9 @@ func NewCloseRequestPayloadMessage(reason string) WebsocketMessage {
 type VersionRequestPayload struct {
 }
 
-// NewVersionRequestPayloadMessage will return a new version request message
-func NewVersionRequestPayloadMessage() WebsocketMessage {
-	return WebsocketMessage{
+// NewVersionRequestMessage will return a new version request message
+func NewVersionRequestMessage() WebsocketRequest {
+	return WebsocketRequest{
 		Type:    VersionRequestType,
 		Payload: VersionRequestPayload{},
 		Version: 0,

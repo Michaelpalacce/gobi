@@ -6,9 +6,9 @@ type VersionResponsePayload struct {
 	Version int `json:"version"`
 }
 
-// NewVersionResponsePayloadMessage will return a new version response message
-func NewVersionResponsePayloadMessage(version int) WebsocketMessage {
-	return WebsocketMessage{
+// NewVersionResponseMessage will return a new version response message
+func NewVersionResponseMessage(version int) WebsocketRequest {
+	return WebsocketRequest{
 		Type: VersionResponseType,
 		Payload: VersionResponsePayload{
 			Version: version,

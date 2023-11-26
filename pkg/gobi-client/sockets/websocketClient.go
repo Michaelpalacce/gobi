@@ -23,7 +23,7 @@ func (c *WebsocketClient) Listen() {
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
 func (c *WebsocketClient) Close(msg string) {
-	payload := messages.NewCloseRequestPayloadMessage(msg)
+	payload := messages.NewCloseRequestMessage(msg)
 
 	// Close the WebSocket connection gracefully
 	_ = c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, string(payload.Marshal())))
@@ -36,6 +36,7 @@ func (c *WebsocketClient) readMessage() {
 out:
 	for {
 		messageType, message, err := c.Conn.ReadMessage()
+		slog.Debug("Received message from server", "message", string(message), "messageType", messageType)
 
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
@@ -104,7 +105,7 @@ func (c *WebsocketClient) processTextMessage(message []byte) error {
 func (c *WebsocketClient) processV0(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
 	case messages.VersionRequestType:
-		if err := c.sendMessage(messages.NewVersionResponsePayloadMessage(c.Version)); err != nil {
+		if err := c.sendMessage(messages.NewVersionResponseMessage(c.Version)); err != nil {
 			return err
 		}
 	default:
@@ -117,7 +118,7 @@ func (c *WebsocketClient) processV0(websocketMessage messages.WebsocketMessage) 
 // processBinaryMessage will process different types of binary messages
 // TODO finish this
 func (c *WebsocketClient) processBinaryMessage(message []byte) error {
-	var websocketResponse messages.WebsocketMessage
+	var websocketResponse messages.WebsocketRequest
 
 	if err := json.Unmarshal(message, &websocketResponse); err != nil {
 		return fmt.Errorf("error while unmarshaling websocket response %s", err)
@@ -139,10 +140,10 @@ func (c *WebsocketClient) processPingMessage(message []byte) error {
 }
 
 // sendMessage enforces a uniform style in sending data
-func (c *WebsocketClient) sendMessage(message messages.WebsocketMessage) error {
-	payload := message.Marshal()
-	slog.Debug("Sending payload to server", "payload", string(payload))
-	err := c.Conn.WriteMessage(websocket.TextMessage, payload)
+func (c *WebsocketClient) sendMessage(message messages.WebsocketRequest) error {
+	messageBytes := message.Marshal()
+	slog.Debug("Sending message to server", "message", string(messageBytes))
+	err := c.Conn.WriteMessage(websocket.TextMessage, messageBytes)
 
 	if err != nil {
 		return fmt.Errorf("error sending message: %s", err)

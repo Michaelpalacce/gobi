@@ -19,7 +19,7 @@ type WebsocketClient struct {
 
 // Listen will request information from the client and then listen for data.
 func (c *WebsocketClient) Listen(closeChan chan<- error) {
-	if err := c.sendMessage(messages.NewVersionRequestPayloadMessage()); err != nil {
+	if err := c.sendMessage(messages.NewVersionRequestMessage()); err != nil {
 		slog.Error("Error while trying to get version to use", "err", err)
 		closeChan <- err
 		return
@@ -30,7 +30,7 @@ func (c *WebsocketClient) Listen(closeChan chan<- error) {
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
 func (c *WebsocketClient) Close(msg string) {
-	payload := messages.NewCloseRequestPayloadMessage(msg)
+	payload := messages.NewCloseRequestMessage(msg)
 
 	// Close the WebSocket connection gracefully
 	_ = c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, string(payload.Marshal())))
@@ -42,6 +42,7 @@ func (c *WebsocketClient) readMessage() (closeError error) {
 out:
 	for {
 		messageType, message, err := c.Conn.ReadMessage()
+		slog.Debug("Received message from client", "message", string(message), "messageType", messageType)
 
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
@@ -91,7 +92,6 @@ func (c *WebsocketClient) processTextMessage(message []byte) error {
 
 	switch websocketMessage.Version {
 	case 0:
-
 		if err := c.processV0(websocketMessage); err != nil {
 			return err
 		}
@@ -111,21 +111,15 @@ func (c *WebsocketClient) processTextMessage(message []byte) error {
 func (c *WebsocketClient) processV0(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
 	case messages.VersionResponseType:
-		payloadBytes, err := json.Marshal(websocketMessage.Payload)
-
-		if err != nil {
-			return err
-		}
-
 		var versionResponsePayload messages.VersionResponsePayload
 
-		if err := json.Unmarshal(payloadBytes, &versionResponsePayload); err != nil {
+		if err := json.Unmarshal(websocketMessage.Payload, &versionResponsePayload); err != nil {
 			return err
 		} else {
 			c.Version = versionResponsePayload.Version
 		}
 	default:
-		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
+		return fmt.Errorf("unknown websocket message type: %s for version 0", websocketMessage.Type)
 	}
 
 	return nil
@@ -134,7 +128,7 @@ func (c *WebsocketClient) processV0(websocketMessage messages.WebsocketMessage) 
 // processBinaryMessage will process different types of binary messages
 // TODO finish this
 func (c *WebsocketClient) processBinaryMessage(message []byte) error {
-	var websocketResponse messages.WebsocketMessage
+	var websocketResponse messages.WebsocketRequest
 
 	if err := json.Unmarshal(message, &websocketResponse); err != nil {
 		return fmt.Errorf("error while unmarshaling websocket response %s", err)
@@ -156,8 +150,10 @@ func (c *WebsocketClient) processPingMessage(message []byte) error {
 }
 
 // sendMessage enforces a uniform style in sending data
-func (c *WebsocketClient) sendMessage(message messages.WebsocketMessage) error {
-	err := c.Conn.WriteMessage(websocket.TextMessage, message.Marshal())
+func (c *WebsocketClient) sendMessage(message messages.WebsocketRequest) error {
+	messageBytes := message.Marshal()
+	slog.Debug("Sending message to server", "message", string(messageBytes))
+	err := c.Conn.WriteMessage(websocket.TextMessage, messageBytes)
 
 	if err != nil {
 		return fmt.Errorf("error sending message: %s", err)
