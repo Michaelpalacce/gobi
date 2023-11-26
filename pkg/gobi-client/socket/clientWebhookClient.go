@@ -80,6 +80,7 @@ out:
 			break out
 		}
 
+		// TODO: This should be in a goroutine
 		switch messageType {
 		case websocket.TextMessage:
 			if closeError = c.processTextMessage(message); closeError != nil {

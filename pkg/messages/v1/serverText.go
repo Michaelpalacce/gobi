@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
@@ -17,6 +18,10 @@ func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client
 	switch websocketMessage.Type {
 	case VaultNameType:
 		if err := processVaultNameMessage(websocketMessage, client); err != nil {
+			return err
+		}
+	case SyncType:
+		if err := processSyncMessage(websocketMessage, client); err != nil {
 			return err
 		}
 	default:
@@ -34,6 +39,19 @@ func processVaultNameMessage(websocketMessage messages.WebsocketMessage, client 
 		return err
 	} else {
 		client.Client.VaultName = vaultNamePayload.VaultName
+	}
+
+	return nil
+}
+
+// processSyncMessage will start sending data to the client that needs to be synced up
+func processSyncMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+	var syncPayload SyncPayload
+
+	if err := json.Unmarshal(websocketMessage.Payload, &syncPayload); err != nil {
+		return err
+	} else {
+		slog.Debug("Client sync attempt", "LastSync", syncPayload.LastSync)
 	}
 
 	return nil
