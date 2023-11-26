@@ -71,6 +71,8 @@ out:
 
 		if conn, err = establishConn(options); err != nil {
 			slog.Error("Error while trying to establish connection to server", "error", err)
+			time.Sleep(5 * time.Second)
+
 			continue out
 		}
 
@@ -97,11 +99,12 @@ out:
 			}
 
 			client.Close("")
-			time.Sleep(5 * time.Second)
 		case <-interrupt:
 			client.Close("os.Interrupt received. Closing connection.")
 			break out
 		}
+
+		time.Sleep(5 * time.Second)
 	}
 
 }
@@ -110,17 +113,24 @@ out:
 func establishConn(options connection.Options) (*websocket.Conn, error) {
 	url := url.URL{Scheme: "ws", Host: options.Host, Path: "/ws/"}
 	header := http.Header{"Authorization": []string{basicAuth(options.Username, options.Password)}}
-	dialer := websocket.DefaultDialer
+	dialer := websocket.Dialer{
+		Proxy:            http.ProxyFromEnvironment,
+		HandshakeTimeout: 45 * time.Second,
+	}
 
 	// Establish a WebSocket connection with headers
 	conn, resp, websocketErr := dialer.Dial(url.String(), header)
 	if websocketErr != nil {
-		// Read and print the body content
-		body, err := io.ReadAll(io.Reader(resp.Body))
-		if err != nil {
-			return nil, fmt.Errorf("error connecting to WebSocket: %s", websocketErr)
+		if resp != nil {
+			// Read and print the body content
+			body, err := io.ReadAll(io.Reader(resp.Body))
+			if err != nil {
+				return nil, fmt.Errorf("error connecting to WebSocket: %s", websocketErr)
+			}
+			return nil, fmt.Errorf("error connecting to WebSocket: %s, response was %s", websocketErr, body)
 		}
-		return nil, fmt.Errorf("error connecting to WebSocket: %s, response was %s", websocketErr, body)
+
+		return nil, fmt.Errorf("error connecting to WebSocket: %s", websocketErr)
 	}
 
 	return conn, nil

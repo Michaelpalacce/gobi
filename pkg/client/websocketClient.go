@@ -13,10 +13,17 @@ import (
 type WebsocketClient struct {
 	Conn   *websocket.Conn
 	Client Client
+	closed bool
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
+// It will set the WebsocketClient as closed and will NOT send a CLose Message if the connection is closed already
 func (c *WebsocketClient) Close(msg string) {
+	if c.closed {
+		return
+	}
+
+	c.closed = true
 	payload := messages.NewCloseMessage(msg)
 
 	// Close the WebSocket connection gracefully
@@ -25,6 +32,9 @@ func (c *WebsocketClient) Close(msg string) {
 
 // sendMessage enforces a uniform style in sending data
 func (c *WebsocketClient) SendMessage(message messages.WebsocketRequest) error {
+	if c.closed {
+		return fmt.Errorf("cannot send a message to closed websocket")
+	}
 	messageBytes := message.Marshal()
 	slog.Debug("Sending message", "message", string(messageBytes))
 	err := c.Conn.WriteMessage(websocket.TextMessage, messageBytes)
