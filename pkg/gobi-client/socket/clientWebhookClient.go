@@ -11,14 +11,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// ClientWebhookClient represents a connected WebSocket client
-type ClientWebhookClient struct {
+// ClientWebsocketClient represents a connected WebSocket client
+type ClientWebsocketClient struct {
 	Client *client.WebsocketClient
 	// Add any other fields you need for tracking the client
 }
 
 // Listen will request information from the client and then listen for data.
-func (c *ClientWebhookClient) Listen(closeChan chan<- error) {
+func (c *ClientWebsocketClient) Listen(closeChan chan<- error) {
 	initChan := make(chan error, 1)
 	readMessageChan := make(chan error, 1)
 	defer close(initChan)
@@ -36,12 +36,12 @@ func (c *ClientWebhookClient) Listen(closeChan chan<- error) {
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
-func (c *ClientWebhookClient) Close(msg string) {
+func (c *ClientWebsocketClient) Close(msg string) {
 	c.Client.Close(msg)
 }
 
 // init will send the initial data to the server. Stuff like what version is being used and what is the name of the vault
-func (c *ClientWebhookClient) init(initChan chan<- error) {
+func (c *ClientWebsocketClient) init(initChan chan<- error) {
 	if err := c.Client.SendMessage(messages.NewVersionMessage(c.Client.Client.Version)); err != nil {
 		initChan <- err
 		return
@@ -60,7 +60,7 @@ func (c *ClientWebhookClient) init(initChan chan<- error) {
 
 // readMessage will continuously wait for incomming messages and process them for the given client
 // This function is blocking and will stop when Close is called
-func (c *ClientWebhookClient) readMessage(readMessageChan chan<- error) {
+func (c *ClientWebsocketClient) readMessage(readMessageChan chan<- error) {
 	var closeError error
 
 out:
@@ -80,7 +80,6 @@ out:
 			break out
 		}
 
-		// TODO: This should be in a goroutine
 		switch messageType {
 		case websocket.TextMessage:
 			if closeError = c.processTextMessage(message); closeError != nil {
@@ -102,13 +101,20 @@ out:
 			closeError = fmt.Errorf("error, unknown message type %d", messageType)
 			break out
 		}
+
+		// messageProcess := make(chan error, 1)
+		//
+		// go func(messageProcess chan<- error) {
+		//
+		// }(messageProcess)
+		// // TODO: This should be in a goroutine
 	}
 
 	readMessageChan <- fmt.Errorf("error while communicating with server: %s", closeError)
 }
 
 // processTextMessage will process different types of text messages
-func (c *ClientWebhookClient) processTextMessage(message []byte) error {
+func (c *ClientWebsocketClient) processTextMessage(message []byte) error {
 	var websocketMessage messages.WebsocketMessage
 
 	if err := json.Unmarshal(message, &websocketMessage); err != nil {
@@ -133,7 +139,7 @@ func (c *ClientWebhookClient) processTextMessage(message []byte) error {
 
 // processV0 since V0 are special, they are handled directly by the client.
 // V0 messages are client specific
-func (c *ClientWebhookClient) processV0(websocketMessage messages.WebsocketMessage) error {
+func (c *ClientWebsocketClient) processV0(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
 	default:
 		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
@@ -142,7 +148,7 @@ func (c *ClientWebhookClient) processV0(websocketMessage messages.WebsocketMessa
 
 // processBinaryMessage will process different types of binary messages
 // TODO: finish this
-func (c *ClientWebhookClient) processBinaryMessage(message []byte) error {
+func (c *ClientWebsocketClient) processBinaryMessage(message []byte) error {
 	var websocketMessage messages.WebsocketMessage
 
 	if err := json.Unmarshal(message, &websocketMessage); err != nil {
@@ -162,7 +168,7 @@ func (c *ClientWebhookClient) processBinaryMessage(message []byte) error {
 }
 
 // processPingMessage will send a PongMessage and nothing else
-func (c *ClientWebhookClient) processPingMessage(message []byte) error {
+func (c *ClientWebsocketClient) processPingMessage(message []byte) error {
 	if err := c.Client.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
 		return fmt.Errorf("error sending message: %s", err)
 	}

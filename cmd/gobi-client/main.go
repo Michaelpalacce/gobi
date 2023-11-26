@@ -77,7 +77,7 @@ out:
 		}
 
 		// establish connection to the server
-		client := socket.ClientWebhookClient{
+		client := socket.ClientWebsocketClient{
 			Client: &client.WebsocketClient{
 				Client: client.Client{
 					// Intentionally hardcoded to latest.

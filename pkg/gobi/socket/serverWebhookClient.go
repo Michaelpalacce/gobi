@@ -11,25 +11,26 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// ServerWebhookClient represents a connected WebSocket client
-type ServerWebhookClient struct {
+// ServerWebsocketClient represents a connected WebSocket client
+type ServerWebsocketClient struct {
 	Client *client.WebsocketClient
 	// Add any other fields you need for tracking the client
 }
 
 // Listen will request information from the client and then listen for data.
-func (c *ServerWebhookClient) Listen(closeChan chan<- error) {
+func (c *ServerWebsocketClient) Listen(closeChan chan<- error) {
 	closeChan <- c.readMessage()
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
-func (c *ServerWebhookClient) Close(msg string) {
+func (c *ServerWebsocketClient) Close(msg string) {
 	c.Client.Close(msg)
 }
 
 // readMessage will continuously wait for incomming messages and process them for the given client
 // This function is blocking and will stop when Close is called
-func (c *ServerWebhookClient) readMessage() (closeError error) {
+// NOTE: Think if we need to make each process handling async here?
+func (c *ServerWebsocketClient) readMessage() (closeError error) {
 out:
 	for {
 		messageType, message, err := c.Client.Conn.ReadMessage()
@@ -47,7 +48,6 @@ out:
 			break out
 		}
 
-		// TODO: This should be in a goroutine
 		switch messageType {
 		case websocket.TextMessage:
 			if closeError = c.processTextMessage(message); closeError != nil {
@@ -75,7 +75,7 @@ out:
 }
 
 // processTextMessage will process different types of text messages
-func (c *ServerWebhookClient) processTextMessage(message []byte) error {
+func (c *ServerWebsocketClient) processTextMessage(message []byte) error {
 	var websocketMessage messages.WebsocketMessage
 
 	if err := json.Unmarshal(message, &websocketMessage); err != nil {
@@ -100,7 +100,7 @@ func (c *ServerWebhookClient) processTextMessage(message []byte) error {
 
 // processV0 since V0 are special, they are handled directly by the client.
 // V0 messages are client specific
-func (c *ServerWebhookClient) processV0(websocketMessage messages.WebsocketMessage) error {
+func (c *ServerWebsocketClient) processV0(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
 	case messages.VersionType:
 		var versionResponsePayload messages.VersionPayload
@@ -118,7 +118,7 @@ func (c *ServerWebhookClient) processV0(websocketMessage messages.WebsocketMessa
 }
 
 // processBinaryMessage will process different types of binary messages
-func (c *ServerWebhookClient) processBinaryMessage(message []byte) error {
+func (c *ServerWebsocketClient) processBinaryMessage(message []byte) error {
 	var websocketMessage messages.WebsocketMessage
 
 	if err := json.Unmarshal(message, &websocketMessage); err != nil {
@@ -138,7 +138,7 @@ func (c *ServerWebhookClient) processBinaryMessage(message []byte) error {
 }
 
 // processPingMessage will send a PongMessage and nothing else
-func (c *ServerWebhookClient) processPingMessage(message []byte) error {
+func (c *ServerWebsocketClient) processPingMessage(message []byte) error {
 	if err := c.Client.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
 		return fmt.Errorf("error sending message: %s", err)
 	}
