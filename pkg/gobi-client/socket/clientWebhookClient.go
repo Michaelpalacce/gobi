@@ -1,41 +1,40 @@
-package sockets
+package socket
 
 import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
 
+	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
+	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/gorilla/websocket"
 )
 
-// WebsocketClient represents a connected WebSocket client
-type WebsocketClient struct {
-	Conn    *websocket.Conn
-	Version int
+// ClientWebhookClient represents a connected WebSocket client
+type ClientWebhookClient struct {
+	Client client.WebsocketClient
+	// Add any other fields you need for tracking the client
 }
 
 // Listen will request information from the client and then listen for data.
 // TODO: Make me better... listen for interrupts AND for closes. In case of close, re-attempt connection
-func (c *WebsocketClient) Listen() {
+func (c *ClientWebhookClient) Listen() {
 	c.readMessage()
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
-func (c *WebsocketClient) Close(msg string) {
-	payload := messages.NewCloseRequestMessage(msg)
-
-	// Close the WebSocket connection gracefully
-	_ = c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, string(payload.Marshal())))
+func (c *ClientWebhookClient) Close(msg string) {
+	c.Client.Close(msg)
 }
 
 // readMessage will continuously wait for incomming messages and process them for the given client
 // This function is blocking and will stop when Close is called
-func (c *WebsocketClient) readMessage() {
+func (c *ClientWebhookClient) readMessage() {
 	var closeError error
 out:
 	for {
-		messageType, message, err := c.Conn.ReadMessage()
+		messageType, message, err := c.Client.Conn.ReadMessage()
 		slog.Debug("Received message from server", "message", string(message), "messageType", messageType)
 
 		if err != nil {
@@ -77,7 +76,7 @@ out:
 }
 
 // processTextMessage will process different types of text messages
-func (c *WebsocketClient) processTextMessage(message []byte) error {
+func (c *ClientWebhookClient) processTextMessage(message []byte) error {
 	var websocketMessage messages.WebsocketMessage
 
 	if err := json.Unmarshal(message, &websocketMessage); err != nil {
@@ -90,9 +89,9 @@ func (c *WebsocketClient) processTextMessage(message []byte) error {
 			return err
 		}
 	case 1:
-		// if err := v1.ProcessMessage(websocketMessage); err != nil {
-		// 	return err
-		// }
+		if err := v1.ProcessClientTextMessage(websocketMessage, c.Client); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown websocket version: %d", websocketMessage.Version)
 	}
@@ -102,10 +101,10 @@ func (c *WebsocketClient) processTextMessage(message []byte) error {
 
 // processV0 since V0 are special, they are handled directly by the client.
 // V0 messages are client specific
-func (c *WebsocketClient) processV0(websocketMessage messages.WebsocketMessage) error {
+func (c *ClientWebhookClient) processV0(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
 	case messages.VersionRequestType:
-		if err := c.sendMessage(messages.NewVersionResponseMessage(c.Version)); err != nil {
+		if err := c.Client.SendMessage(messages.NewVersionResponseMessage(c.Client.Client.Version)); err != nil {
 			return err
 		}
 	default:
@@ -117,35 +116,28 @@ func (c *WebsocketClient) processV0(websocketMessage messages.WebsocketMessage) 
 
 // processBinaryMessage will process different types of binary messages
 // TODO finish this
-func (c *WebsocketClient) processBinaryMessage(message []byte) error {
-	var websocketResponse messages.WebsocketRequest
+func (c *ClientWebhookClient) processBinaryMessage(message []byte) error {
+	var websocketMessage messages.WebsocketMessage
 
-	if err := json.Unmarshal(message, &websocketResponse); err != nil {
+	if err := json.Unmarshal(message, &websocketMessage); err != nil {
 		return fmt.Errorf("error while unmarshaling websocket response %s", err)
 	}
 
-	switch websocketResponse.Version {
+	switch websocketMessage.Version {
+	case 1:
+		if err := v1.ProcessClientBinaryMessage(websocketMessage, c.Client); err != nil {
+			return err
+		}
 	default:
-		return fmt.Errorf("unknown websocket version: %d", websocketResponse.Version)
-	}
-}
-
-// processPingMessage will send a PongMessage and nothing else
-func (c *WebsocketClient) processPingMessage(message []byte) error {
-	if err := c.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
-		return fmt.Errorf("error sending message: %s", err)
+		return fmt.Errorf("unknown websocket version: %d", websocketMessage.Version)
 	}
 
 	return nil
 }
 
-// sendMessage enforces a uniform style in sending data
-func (c *WebsocketClient) sendMessage(message messages.WebsocketRequest) error {
-	messageBytes := message.Marshal()
-	slog.Debug("Sending message to server", "message", string(messageBytes))
-	err := c.Conn.WriteMessage(websocket.TextMessage, messageBytes)
-
-	if err != nil {
+// processPingMessage will send a PongMessage and nothing else
+func (c *ClientWebhookClient) processPingMessage(message []byte) error {
+	if err := c.Client.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
 		return fmt.Errorf("error sending message: %s", err)
 	}
 

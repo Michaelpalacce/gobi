@@ -11,7 +11,8 @@ import (
 
 	"io"
 
-	"github.com/Michaelpalacce/gobi/pkg/gobi-client/sockets"
+	"github.com/Michaelpalacce/gobi/pkg/client"
+	"github.com/Michaelpalacce/gobi/pkg/gobi-client/socket"
 	"github.com/Michaelpalacce/gobi/pkg/logger"
 	"github.com/gorilla/websocket"
 )
@@ -19,9 +20,13 @@ import (
 func main() {
 	logger.ConfigureLogging()
 	// establish connection to the server
-	client := sockets.WebsocketClient{
-		Version: 1, // TODO Make me dynamic
-		Conn:    establishConn(),
+	client := socket.ClientWebhookClient{
+		Client: client.WebsocketClient{
+			Client: client.Client{
+				Version: 1,
+			},
+			Conn: establishConn(),
+		},
 	}
 
 	// Set up a channel to handle signals for graceful shutdown

@@ -4,7 +4,8 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/Michaelpalacce/gobi/pkg/gobi/sockets"
+	"github.com/Michaelpalacce/gobi/pkg/client"
+	"github.com/Michaelpalacce/gobi/pkg/gobi/socket"
 	"github.com/gorilla/websocket"
 )
 
@@ -14,12 +15,12 @@ var connectedClientsMutex sync.Mutex
 // WebsocketService handles the connection between the server and the clients
 type WebsocketService struct {
 	// connectedClients is a map of all the connected clients
-	connectedClients map[*sockets.WebsocketClient]bool
+	connectedClients map[*socket.ServerWebhookClient]bool
 }
 
 func NewWebsocketService() WebsocketService {
 	return WebsocketService{
-		connectedClients: make(map[*sockets.WebsocketClient]bool),
+		connectedClients: make(map[*socket.ServerWebhookClient]bool),
 	}
 }
 
@@ -27,7 +28,9 @@ func NewWebsocketService() WebsocketService {
 // At the end, the client will be unregistered and the connection will be closed with
 // an Error message if one was present
 func (s *WebsocketService) HandleConnection(conn *websocket.Conn) {
-	client := &sockets.WebsocketClient{Conn: conn}
+	client := &socket.ServerWebhookClient{Client: client.WebsocketClient{
+		Conn: conn,
+	}}
 
 	s.registerClient(client)
 	defer s.unregisterClient(client)
@@ -48,7 +51,7 @@ func (s *WebsocketService) HandleConnection(conn *websocket.Conn) {
 }
 
 // registerClient registers a client
-func (s *WebsocketService) registerClient(client *sockets.WebsocketClient) {
+func (s *WebsocketService) registerClient(client *socket.ServerWebhookClient) {
 	connectedClientsMutex.Lock()
 
 	s.connectedClients[client] = true
@@ -57,7 +60,7 @@ func (s *WebsocketService) registerClient(client *sockets.WebsocketClient) {
 }
 
 // unregisterClient unregisters a client
-func (s *WebsocketService) unregisterClient(client *sockets.WebsocketClient) {
+func (s *WebsocketService) unregisterClient(client *socket.ServerWebhookClient) {
 	connectedClientsMutex.Lock()
 
 	delete(s.connectedClients, client)
