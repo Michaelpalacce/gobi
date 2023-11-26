@@ -8,6 +8,7 @@ Go Bi-Directional Sync With API
 - [x] Project design and structure
 - [x] Basic Authentication
 - [ ] Storage Driver Interface
+- [ ] Docker Compose For Mongo And Redis
 - [ ] Local Storage Driver
 - [ ] File Uploading
 - [ ] File Pushing
