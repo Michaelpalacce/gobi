@@ -17,3 +17,22 @@ func NewVaultNameMessage(vaultName string) messages.WebsocketRequest {
 		Version: 1,
 	}
 }
+
+// SyncPayload represents a payload telling the Server that the client wants to sync.
+// Contains the last time the client successfully synced with the server
+type SyncPayload struct {
+	// LastSync is timestamp in UTC
+	LastSync int `json:"lastSync"`
+}
+
+// NewSyncMessage creates a message to send to the server telling it when was the last time the client synced.
+// The LastSync is a timestamp
+func NewSyncMessage(lastSync int) messages.WebsocketRequest {
+	return messages.WebsocketRequest{
+		Type: SyncType,
+		Payload: SyncPayload{
+			LastSync: lastSync,
+		},
+		Version: 1,
+	}
+}

@@ -132,12 +132,10 @@ func (c *ClientWebhookClient) processV0(websocketMessage messages.WebsocketMessa
 	default:
 		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
 	}
-
-	return nil
 }
 
 // processBinaryMessage will process different types of binary messages
-// TODO finish this
+// TODO: finish this
 func (c *ClientWebhookClient) processBinaryMessage(message []byte) error {
 	var websocketMessage messages.WebsocketMessage
 

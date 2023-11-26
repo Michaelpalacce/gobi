@@ -109,7 +109,8 @@ out:
 
 }
 
-// establishConn will fetch the username and password from the arguments and establish a connection to the server
+// establishConn establish a connection to the server using the given option.
+// Supprts only BasicAuth
 func establishConn(options connection.Options) (*websocket.Conn, error) {
 	url := url.URL{Scheme: "ws", Host: options.Host, Path: "/ws/"}
 	header := http.Header{"Authorization": []string{basicAuth(options.Username, options.Password)}}
