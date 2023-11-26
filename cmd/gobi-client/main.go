@@ -84,6 +84,8 @@ out:
 					Version:   1,
 					VaultName: vaultName,
 					VaultPath: vaultPath,
+					// TODO: Fetch me from somewhere... sqlite???
+					LastSync: 0,
 				},
 				Conn: conn,
 			},
@@ -106,7 +108,6 @@ out:
 
 		time.Sleep(5 * time.Second)
 	}
-
 }
 
 // establishConn establish a connection to the server using the given option.

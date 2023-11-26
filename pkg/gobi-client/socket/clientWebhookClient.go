@@ -51,6 +51,11 @@ func (c *ClientWebhookClient) init(initChan chan<- error) {
 		initChan <- err
 		return
 	}
+
+	if err := c.Client.SendMessage(v1.NewSyncMessage(c.Client.Client.LastSync)); err != nil {
+		initChan <- err
+		return
+	}
 }
 
 // readMessage will continuously wait for incomming messages and process them for the given client

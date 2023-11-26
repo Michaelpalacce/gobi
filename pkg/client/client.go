@@ -5,4 +5,5 @@ type Client struct {
 	Version   int
 	VaultName string
 	VaultPath string
+	LastSync  int
 }
