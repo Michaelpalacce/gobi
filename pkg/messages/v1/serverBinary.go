@@ -6,6 +6,6 @@ import (
 )
 
 // ProcessServerBinaryMessage will decide how to process the binary message.
-func ProcessServerBinaryMessage(websocketMessage messages.WebsocketMessage, client client.WebsocketClient) error {
+func ProcessServerBinaryMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
 	return nil
 }

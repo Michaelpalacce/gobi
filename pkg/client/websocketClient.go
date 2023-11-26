@@ -17,7 +17,7 @@ type WebsocketClient struct {
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
 func (c *WebsocketClient) Close(msg string) {
-	payload := messages.NewCloseRequestMessage(msg)
+	payload := messages.NewCloseMessage(msg)
 
 	// Close the WebSocket connection gracefully
 	_ = c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, string(payload.Marshal())))

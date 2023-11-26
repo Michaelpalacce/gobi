@@ -5,12 +5,10 @@ import (
 	"fmt"
 )
 
-// Holds differnt message types
+// Holds different message types
 var (
-	VersionRequestType = "versionRequest"
-	CloseRequestType   = "closeRequest"
-
-	VersionResponseType = "versionResponse"
+	VersionType = "version"
+	CloseType   = "close"
 )
 
 // WebsocketRequest is the general WebsocketRequest that all requests will follow.

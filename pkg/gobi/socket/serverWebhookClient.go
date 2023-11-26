@@ -13,18 +13,12 @@ import (
 
 // ServerWebhookClient represents a connected WebSocket client
 type ServerWebhookClient struct {
-	Client client.WebsocketClient
+	Client *client.WebsocketClient
 	// Add any other fields you need for tracking the client
 }
 
 // Listen will request information from the client and then listen for data.
 func (c *ServerWebhookClient) Listen(closeChan chan<- error) {
-	if err := c.Client.SendMessage(messages.NewVersionRequestMessage()); err != nil {
-		slog.Error("Error while trying to get version to use", "err", err)
-		closeChan <- err
-		return
-	}
-
 	closeChan <- c.readMessage()
 }
 
@@ -107,8 +101,8 @@ func (c *ServerWebhookClient) processTextMessage(message []byte) error {
 // V0 messages are client specific
 func (c *ServerWebhookClient) processV0(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
-	case messages.VersionResponseType:
-		var versionResponsePayload messages.VersionResponsePayload
+	case messages.VersionType:
+		var versionResponsePayload messages.VersionPayload
 
 		if err := json.Unmarshal(websocketMessage.Payload, &versionResponsePayload); err != nil {
 			return err

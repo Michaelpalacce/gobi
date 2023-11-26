@@ -6,6 +6,6 @@ import (
 )
 
 // ProcessClientTextMessage will decide how to process the text message.
-func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client client.WebsocketClient) error {
+func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
 	return nil
 }

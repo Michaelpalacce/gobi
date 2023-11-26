@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"flag"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,10 +21,12 @@ import (
 func main() {
 	logger.ConfigureLogging()
 	// establish connection to the server
+	//TODO: Client props should be loaded
 	client := socket.ClientWebhookClient{
-		Client: client.WebsocketClient{
+		Client: &client.WebsocketClient{
 			Client: client.Client{
-				Version: 1,
+				Version:   1,
+				VaultName: "Test",
 			},
 			Conn: establishConn(),
 		},
@@ -31,18 +34,28 @@ func main() {
 
 	// Set up a channel to handle signals for graceful shutdown
 	interrupt := make(chan os.Signal, 1)
+	closeChan := make(chan error, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
 	// Start a goroutine to read messages from the WebSocket connection
-	go client.Listen()
+	go client.Listen(closeChan)
+	defer close(closeChan)
+	defer close(interrupt)
 
-	// Wait for a signal to gracefully close the connection
-	<-interrupt
-	client.Close("")
+	select {
+	case err := <-closeChan:
+		if err != nil {
+			slog.Error("Closing connection due to error with server", "error", err)
+			client.Close(err.Error())
+		}
+
+		client.Close("")
+	case <-interrupt:
+		client.Close("os.Interrupt received. Closing connection.")
+	}
 }
 
 // establishConn will fetch the username and password from the arguments and establish a connection to the server
-// TODO: Move auth to the gobi-client
 func establishConn() *websocket.Conn {
 	// Define command-line flags for username and password
 	var (
@@ -59,7 +72,7 @@ func establishConn() *websocket.Conn {
 	flag.Parse()
 
 	// Check if both username and password are provided
-	if username == "" || password == "" {
+	if username == "" || password == "" || host == "" {
 		flag.Usage()
 		os.Exit(1)
 	}

@@ -13,14 +13,26 @@ import (
 
 // ClientWebhookClient represents a connected WebSocket client
 type ClientWebhookClient struct {
-	Client client.WebsocketClient
+	Client *client.WebsocketClient
 	// Add any other fields you need for tracking the client
 }
 
 // Listen will request information from the client and then listen for data.
-// TODO: Make me better... listen for interrupts AND for closes. In case of close, re-attempt connection
-func (c *ClientWebhookClient) Listen() {
-	c.readMessage()
+func (c *ClientWebhookClient) Listen(closeChan chan<- error) {
+	initChan := make(chan error, 1)
+	readMessageChan := make(chan error, 1)
+	defer close(initChan)
+	defer close(readMessageChan)
+
+	go c.init(initChan)
+	go c.readMessage(readMessageChan)
+
+	select {
+	case err := <-initChan:
+		closeChan <- err
+	case err := <-readMessageChan:
+		closeChan <- err
+	}
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
@@ -28,10 +40,24 @@ func (c *ClientWebhookClient) Close(msg string) {
 	c.Client.Close(msg)
 }
 
+// init will send the initial data to the server. Stuff like what version is being used and what is the name of the vault
+func (c *ClientWebhookClient) init(initChan chan<- error) {
+	if err := c.Client.SendMessage(messages.NewVersionMessage(c.Client.Client.Version)); err != nil {
+		initChan <- err
+		return
+	}
+
+	if err := c.Client.SendMessage(v1.NewVaultNameMessage(c.Client.Client.VaultName)); err != nil {
+		initChan <- err
+		return
+	}
+}
+
 // readMessage will continuously wait for incomming messages and process them for the given client
 // This function is blocking and will stop when Close is called
-func (c *ClientWebhookClient) readMessage() {
+func (c *ClientWebhookClient) readMessage(readMessageChan chan<- error) {
 	var closeError error
+
 out:
 	for {
 		messageType, message, err := c.Client.Conn.ReadMessage()
@@ -72,7 +98,7 @@ out:
 		}
 	}
 
-	c.Close(fmt.Errorf("error while communicating with server: %s", closeError).Error())
+	readMessageChan <- fmt.Errorf("error while communicating with server: %s", closeError)
 }
 
 // processTextMessage will process different types of text messages
@@ -103,10 +129,6 @@ func (c *ClientWebhookClient) processTextMessage(message []byte) error {
 // V0 messages are client specific
 func (c *ClientWebhookClient) processV0(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
-	case messages.VersionRequestType:
-		if err := c.Client.SendMessage(messages.NewVersionResponseMessage(c.Client.Client.Version)); err != nil {
-			return err
-		}
 	default:
 		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
 	}

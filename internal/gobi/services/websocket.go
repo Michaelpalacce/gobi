@@ -28,7 +28,7 @@ func NewWebsocketService() WebsocketService {
 // At the end, the client will be unregistered and the connection will be closed with
 // an Error message if one was present
 func (s *WebsocketService) HandleConnection(conn *websocket.Conn) {
-	client := &socket.ServerWebhookClient{Client: client.WebsocketClient{
+	client := &socket.ServerWebhookClient{Client: &client.WebsocketClient{
 		Conn: conn,
 	}}
 
