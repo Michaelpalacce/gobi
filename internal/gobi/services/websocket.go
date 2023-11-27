@@ -6,8 +6,9 @@ import (
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/database"
-	"github.com/Michaelpalacce/gobi/pkg/gobi/socket"
+	"github.com/Michaelpalacce/gobi/pkg/gobi/connection"
 	"github.com/Michaelpalacce/gobi/pkg/models"
+	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/gorilla/websocket"
 )
 
@@ -17,14 +18,14 @@ var connectedClientsMutex sync.Mutex
 // WebsocketService handles the connection between the server and the clients
 type WebsocketService struct {
 	// connectedClients is a map of all the connected clients
-	connectedClients map[*socket.ServerWebsocketClient]bool
+	connectedClients map[*connection.ServerConnection]bool
 
 	DB *database.Database
 }
 
 func NewWebsocketService(db *database.Database) WebsocketService {
 	return WebsocketService{
-		connectedClients: make(map[*socket.ServerWebsocketClient]bool),
+		connectedClients: make(map[*connection.ServerConnection]bool),
 		DB:               db,
 	}
 }
@@ -33,7 +34,7 @@ func NewWebsocketService(db *database.Database) WebsocketService {
 // At the end, the client will be unregistered and the connection will be closed with
 // an Error message if one was present
 func (s *WebsocketService) HandleConnection(conn *websocket.Conn, user models.User) {
-	client := &socket.ServerWebsocketClient{Client: &client.WebsocketClient{
+	client := &connection.ServerConnection{Client: &socket.WebsocketClient{
 		DB:   s.DB,
 		Conn: conn,
 
@@ -61,7 +62,7 @@ func (s *WebsocketService) HandleConnection(conn *websocket.Conn, user models.Us
 }
 
 // registerClient registers a client
-func (s *WebsocketService) registerClient(client *socket.ServerWebsocketClient) {
+func (s *WebsocketService) registerClient(client *connection.ServerConnection) {
 	connectedClientsMutex.Lock()
 
 	s.connectedClients[client] = true
@@ -70,7 +71,7 @@ func (s *WebsocketService) registerClient(client *socket.ServerWebsocketClient) 
 }
 
 // unregisterClient unregisters a client
-func (s *WebsocketService) unregisterClient(client *socket.ServerWebsocketClient) {
+func (s *WebsocketService) unregisterClient(client *connection.ServerConnection) {
 	connectedClientsMutex.Lock()
 
 	delete(s.connectedClients, client)

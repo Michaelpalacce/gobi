@@ -7,21 +7,21 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/models"
+	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage/metadata"
 	"github.com/gorilla/websocket"
 )
 
 // ProcessServerBinaryMessage will decide how to process the binary message.
-func ProcessServerBinaryMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+func ProcessServerBinaryMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	return nil
 }
 
 // ProcessServerTextMessage will decide how to process the text message.
-func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	if client.Client.Version == 0 {
 		return fmt.Errorf("before communications can happen, client must send %s message to specify version to use for responses", messages.VersionType)
 	}
@@ -43,7 +43,7 @@ func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client
 }
 
 // processVaultNameMessage will set the VaultName in the client if when it's sent
-func processVaultNameMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+func processVaultNameMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var vaultNamePayload v1.VaultNamePayload
 
 	if err := json.Unmarshal(websocketMessage.Payload, &vaultNamePayload); err != nil {
@@ -56,7 +56,7 @@ func processVaultNameMessage(websocketMessage messages.WebsocketMessage, client 
 }
 
 // processSyncMessage will start sending data to the client that needs to be synced up
-func processSyncMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+func processSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var syncPayload v1.SyncPayload
 
 	if err := json.Unmarshal(websocketMessage.Payload, &syncPayload); err != nil {
@@ -82,7 +82,7 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *clie
 }
 
 // sendBigFile will send an item to the client without storing bigger than 1024 chunks in memory
-func sendBigFile(client *client.WebsocketClient, item models.Item) error {
+func sendBigFile(client *socket.WebsocketClient, item models.Item) error {
 	file, err := os.Open(item.ServerPath)
 	if err != nil {
 		return fmt.Errorf("error opening file: %s", err)

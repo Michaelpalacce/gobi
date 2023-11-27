@@ -5,19 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"os"
-	"path/filepath"
 
-	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/models"
+	"github.com/Michaelpalacce/gobi/pkg/socket"
 )
 
 // ProcessClientTextMessage will decide how to process the text message.
-func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	switch websocketMessage.Type {
 	case v1.ItemsSyncType:
 		if err := processItemSyncMessage(websocketMessage, client); err != nil {
@@ -34,7 +31,7 @@ func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client
 // Check if sha256 matches locally
 // Request File if it does not.
 // TODO: Save filesToFetch and implement a resume mechanism for future
-func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var itemsSyncPayload v1.ItemsSyncPayload
 
 	if err := json.Unmarshal(websocketMessage.Payload, &itemsSyncPayload); err != nil {
@@ -50,63 +47,14 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 	}
 
 	// Foreach filesToFetch and download them all
-	// TODO: Better way of handling authentication. Perhaps send it off to another class to handle
-	for _, item := range filesToFetch {
-		queryParams := url.Values{}
-		queryParams.Add("vaultName", client.Client.VaultName)
-		queryParams.Add("serverPath", item.ServerPath)
+	// for _, item := range filesToFetch {
+	// }
 
-		url := url.URL{
-			Scheme:   "http",
-			Host:     client.Options.Host,
-			Path:     "/v1/item",
-			RawQuery: queryParams.Encode(),
-			User:     url.UserPassword(client.Options.Username, client.Options.Password),
-		}
-
-		err := downloadFile(url, item)
-
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func downloadFile(url url.URL, item models.Item) error {
-	// Make GET request
-	response, err := http.Get(url.String())
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	// Check if the response status code is OK (200)
-	if response.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP request failed with status code: %d", response.StatusCode)
-	}
-
-	// Create or truncate the file
-	// TODO: Don't have me hardcoded
-	file, err := os.Create(filepath.Join("./dev/clientFolder", item.ServerPath))
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	// Copy the response body to the file
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("File downloaded and saved to: %s\n", item.ServerPath)
 	return nil
 }
 
 // ProcessClientBinaryMessage will decide how to process the binary message.
-func ProcessClientBinaryMessage(message []byte, client *client.WebsocketClient) error {
+func ProcessClientBinaryMessage(message []byte, client *socket.WebsocketClient) error {
 	fmt.Println("Received binary message")
 
 	// Save the received file

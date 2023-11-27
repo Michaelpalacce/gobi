@@ -1,25 +1,25 @@
-package socket
+package connection
 
 import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
 
-	"github.com/Michaelpalacce/gobi/pkg/client"
 	processor_v1 "github.com/Michaelpalacce/gobi/pkg/gobi-client/processor/v1"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
+	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/gorilla/websocket"
 )
 
-// ClientWebsocketClient represents a connected WebSocket client
-type ClientWebsocketClient struct {
-	Websocket *client.WebsocketClient
+// ClientConnection handles the initial processing of the websocket messages and sends it off to the WebsocketClient to take care of them
+type ClientConnection struct {
+	WebsocketClient *socket.WebsocketClient
 	// Add any other fields you need for tracking the client
 }
 
 // Listen will request information from the client and then listen for data.
-func (c *ClientWebsocketClient) Listen(closeChan chan<- error) {
+func (c *ClientConnection) Listen(closeChan chan<- error) {
 	initChan := make(chan error, 1)
 	readMessageChan := make(chan error, 1)
 	defer close(initChan)
@@ -37,23 +37,23 @@ func (c *ClientWebsocketClient) Listen(closeChan chan<- error) {
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
-func (c *ClientWebsocketClient) Close(msg string) {
-	c.Websocket.Close(msg)
+func (c *ClientConnection) Close(msg string) {
+	c.WebsocketClient.Close(msg)
 }
 
 // init will send the initial data to the server. Stuff like what version is being used and what is the name of the vault
-func (c *ClientWebsocketClient) init(initChan chan<- error) {
-	if err := c.Websocket.SendMessage(messages.NewVersionMessage(c.Websocket.Client.Version)); err != nil {
+func (c *ClientConnection) init(initChan chan<- error) {
+	if err := c.WebsocketClient.SendMessage(messages.NewVersionMessage(c.WebsocketClient.Client.Version)); err != nil {
 		initChan <- err
 		return
 	}
 
-	if err := c.Websocket.SendMessage(v1.NewVaultNameMessage(c.Websocket.Client.VaultName)); err != nil {
+	if err := c.WebsocketClient.SendMessage(v1.NewVaultNameMessage(c.WebsocketClient.Client.VaultName)); err != nil {
 		initChan <- err
 		return
 	}
 
-	if err := c.Websocket.SendMessage(v1.NewSyncMessage(c.Websocket.Client.LastSync)); err != nil {
+	if err := c.WebsocketClient.SendMessage(v1.NewSyncMessage(c.WebsocketClient.Client.LastSync)); err != nil {
 		initChan <- err
 		return
 	}
@@ -61,12 +61,12 @@ func (c *ClientWebsocketClient) init(initChan chan<- error) {
 
 // readMessage will continuously wait for incomming messages and process them for the given client
 // This function is blocking and will stop when Close is called
-func (c *ClientWebsocketClient) readMessage(readMessageChan chan<- error) {
+func (c *ClientConnection) readMessage(readMessageChan chan<- error) {
 	var closeError error
 
 out:
 	for {
-		messageType, message, err := c.Websocket.Conn.ReadMessage()
+		messageType, message, err := c.WebsocketClient.Conn.ReadMessage()
 		slog.Debug("Received message from server", "message", string(message), "messageType", messageType)
 
 		if err != nil {
@@ -108,7 +108,7 @@ out:
 }
 
 // processTextMessage will process different types of text messages
-func (c *ClientWebsocketClient) processTextMessage(message []byte) error {
+func (c *ClientConnection) processTextMessage(message []byte) error {
 	var websocketMessage messages.WebsocketMessage
 
 	if err := json.Unmarshal(message, &websocketMessage); err != nil {
@@ -121,7 +121,7 @@ func (c *ClientWebsocketClient) processTextMessage(message []byte) error {
 			return err
 		}
 	case 1:
-		if err := processor_v1.ProcessClientTextMessage(websocketMessage, c.Websocket); err != nil {
+		if err := processor_v1.ProcessClientTextMessage(websocketMessage, c.WebsocketClient); err != nil {
 			return err
 		}
 	default:
@@ -133,7 +133,7 @@ func (c *ClientWebsocketClient) processTextMessage(message []byte) error {
 
 // processV0 since V0 are special, they are handled directly by the client.
 // V0 messages are client specific
-func (c *ClientWebsocketClient) processV0(websocketMessage messages.WebsocketMessage) error {
+func (c *ClientConnection) processV0(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
 	default:
 		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
@@ -142,8 +142,8 @@ func (c *ClientWebsocketClient) processV0(websocketMessage messages.WebsocketMes
 
 // processBinaryMessage will process different types of binary messages
 // When processing the binary message we need to know where to store it
-func (c *ClientWebsocketClient) processBinaryMessage(message []byte) error {
-	if err := processor_v1.ProcessClientBinaryMessage(message, c.Websocket); err != nil {
+func (c *ClientConnection) processBinaryMessage(message []byte) error {
+	if err := processor_v1.ProcessClientBinaryMessage(message, c.WebsocketClient); err != nil {
 		return err
 	}
 
@@ -152,8 +152,8 @@ func (c *ClientWebsocketClient) processBinaryMessage(message []byte) error {
 }
 
 // processPingMessage will send a PongMessage and nothing else
-func (c *ClientWebsocketClient) processPingMessage(message []byte) error {
-	if err := c.Websocket.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
+func (c *ClientConnection) processPingMessage(message []byte) error {
+	if err := c.WebsocketClient.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
 		return fmt.Errorf("error sending message: %s", err)
 	}
 

@@ -32,10 +32,9 @@ func SetupRouter(
 	}
 
 	// V1
-
 	v1Routes := r.Group("/v1/")
 	v1Routes.Use(authMiddleware)
-	// Item Routes
+	// Item Routes are not in use currently in favor of websocket communication. Leaving this for now
 	itemRoutes := v1Routes.Group("/item")
 	{
 		itemRoutes.GET("/", itemsHandler.GetItem)

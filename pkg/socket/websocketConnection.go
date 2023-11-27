@@ -1,10 +1,10 @@
-package client
+package socket
 
 import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Michaelpalacce/gobi/internal/gobi-client/connection"
+	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
@@ -18,14 +18,13 @@ type WebsocketClient struct {
 	// General
 	Conn          *websocket.Conn
 	StorageDriver storage.Driver
-	Client        Client
+	Client        client.Client
 	closed        bool
 
 	// Server Exclusive
 	DB *database.Database
 
 	// Client Exclusive
-	Options connection.Options
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.

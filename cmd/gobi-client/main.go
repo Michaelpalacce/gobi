@@ -12,11 +12,11 @@ import (
 
 	"io"
 
-	"github.com/Michaelpalacce/gobi/internal/gobi-client/connection"
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/gobi-client/auth"
-	"github.com/Michaelpalacce/gobi/pkg/gobi-client/socket"
+	"github.com/Michaelpalacce/gobi/pkg/gobi-client/connection"
 	"github.com/Michaelpalacce/gobi/pkg/logger"
+	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/gorilla/websocket"
 )
@@ -31,7 +31,7 @@ func main() {
 		password   string
 		vaultName  string
 		vaultPath  string
-		gobiClient *socket.ClientWebsocketClient
+		gobiClient *connection.ClientConnection
 	)
 
 	flag.StringVar(&host, "host", "localhost:8080", "Target host")
@@ -73,8 +73,8 @@ out:
 			break out
 		}
 
-		gobiClient = &socket.ClientWebsocketClient{
-			Websocket: &client.WebsocketClient{
+		gobiClient = &connection.ClientConnection{
+			WebsocketClient: &socket.WebsocketClient{
 				Client: client.Client{
 					// Intentionally hardcoded to latest.
 					Version:   1,
@@ -87,7 +87,6 @@ out:
 				StorageDriver: &storage.LocalDriver{
 					VaultPath: vaultPath,
 				},
-				Options: options,
 			},
 		}
 
@@ -133,7 +132,7 @@ func establishConn(options connection.Options) (*websocket.Conn, error) {
 	return conn, nil
 }
 
-func interrupt(gobiClient *socket.ClientWebsocketClient) {
+func interrupt(gobiClient *connection.ClientConnection) {
 	// Set up a channel to handle signals for graceful shutdown
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
