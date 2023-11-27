@@ -4,7 +4,5 @@ var (
 	VaultNameType = "vaultName"
 	SyncType      = "sync"
 	ItemsSyncType = "itemsSync"
-
-	// Transfer Types
-	TransferStartType = "transferStart"
+	ItemFetchType = "itemFetch"
 )

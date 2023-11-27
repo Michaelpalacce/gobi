@@ -66,14 +66,6 @@ func (c *ClientConnection) readMessage(readMessageChan chan<- error) {
 
 out:
 	for {
-		if c.WebsocketClient.StorageDriver.HasItemsToProcess() {
-			slog.Debug("The StorageDriver has items to process")
-			if err := c.WebsocketClient.SendMessage(v1.NewSyncMessage(c.WebsocketClient.Client.LastSync)); err != nil {
-				closeError = err
-				break out
-			}
-		}
-
 		messageType, message, err := c.WebsocketClient.Conn.ReadMessage()
 		slog.Debug("Received message from server", "message", string(message), "messageType", messageType)
 

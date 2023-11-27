@@ -52,13 +52,17 @@ func NewItemsSyncMessage(items []models.Item) messages.WebsocketRequest {
 	}
 }
 
-type TransferStartPayload struct{}
+type ItemFetchPayload struct {
+	Item models.Item `json:"item"`
+}
 
-// NewTransferStartPayload is the beginning handshake that the client or server wants to either push or pull data
-func NewTransferStartPayload() messages.WebsocketRequest {
+// NewItemFetchMessage is a message that notifies the server that the client wants to get a specific file
+func NewItemFetchMessage(item models.Item) messages.WebsocketRequest {
 	return messages.WebsocketRequest{
-		Type:    TransferStartType,
+		Type:    ItemFetchType,
 		Version: 1,
-		Payload: TransferStartPayload{},
+		Payload: ItemFetchPayload{
+			Item: item,
+		},
 	}
 }

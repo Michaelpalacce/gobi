@@ -2,6 +2,7 @@ package services
 
 import (
 	"log/slog"
+	"os"
 	"sync"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
@@ -9,6 +10,7 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/gobi/connection"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
+	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/gorilla/websocket"
 )
 
@@ -37,6 +39,9 @@ func (s *WebsocketService) HandleConnection(conn *websocket.Conn, user models.Us
 	client := &connection.ServerConnection{Client: &socket.WebsocketClient{
 		DB:   s.DB,
 		Conn: conn,
+        StorageDriver: &storage.LocalDriver{
+            VaultPath: os.Getenv("LOCAL_VAULTS_LOCATION"),
+        },
 
 		Client: client.Client{
 			User: user,

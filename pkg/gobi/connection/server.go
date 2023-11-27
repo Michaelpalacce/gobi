@@ -29,6 +29,7 @@ func (c *ServerConnection) Close(msg string) {
 
 // readMessage will continuously wait for incomming messages and process them for the given client
 // This function is blocking and will stop when Close is called
+// TODO: At the same time subscribe to a Redis queue. In case something gets changed, we'll know and we'll send it over eventually.
 func (c *ServerConnection) readMessage() (closeError error) {
 out:
 	for {

@@ -1,6 +1,9 @@
 package storage
 
 import (
+	"fmt"
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -13,16 +16,29 @@ type LocalDriver struct {
 	queue     []models.Item
 }
 
-// Enqueue adds the given items array to the queue for later processing.
-func (d *LocalDriver) Enqueue(items []models.Item) error {
-	if d.queue == nil {
-		d.queue = make([]models.Item, len(items))
+func NewLocalDriver(vaultPath string) *LocalDriver {
+	return &LocalDriver{
+		VaultPath: vaultPath,
+		queue:     make([]models.Item, 0),
 	}
+}
 
+// Enqueue adds the given items array to the queue for later processing.
+func (d *LocalDriver) Enqueue(items []models.Item) {
 	for _, item := range items {
 		if ok := d.checkIfLocalMatch(item); !ok {
 			d.queue = append(d.queue, item)
 		}
+	}
+}
+
+// GetNext will return the next File in the queue
+func (d *LocalDriver) GetNext() *models.Item {
+	if len(d.queue) > 0 {
+		var current models.Item
+		slog.Debug("Queue", "queue", d.queue)
+		current, d.queue = d.queue[0], d.queue[1:]
+		return &current
 	}
 
 	return nil
@@ -31,10 +47,9 @@ func (d *LocalDriver) Enqueue(items []models.Item) error {
 // CheckIfLocalMatch will build up the correct filePath based on the item and check if what we have locally matches.
 // Checks by filePath and SHA256
 func (d *LocalDriver) checkIfLocalMatch(i models.Item) bool {
-	absFilePath := filepath.Join(d.VaultPath, i.ServerPath)
+	absFilePath := d.getFilePath(i)
 	_, err := os.Stat(absFilePath)
 
-	// This can be returned directly, yes, leave it for now
 	if err != nil {
 		return false
 	}
@@ -48,7 +63,22 @@ func (d *LocalDriver) checkIfLocalMatch(i models.Item) bool {
 	return sha256 == i.SHA256
 }
 
-// TODO: finish me
+// HasItemsToProcess will return true if there is more than one item in the queue
 func (d *LocalDriver) HasItemsToProcess() bool {
-	return false
+	return len(d.queue) > 0
+}
+
+// GetReader will return a new ReadCloser for the item
+func (d *LocalDriver) GetReader(i models.Item) (io.ReadCloser, error) {
+	file, err := os.Open(d.getFilePath(i))
+
+	if err != nil {
+		return nil, fmt.Errorf("error opening file: %s", err)
+	}
+
+	return file, nil
+}
+
+func (d *LocalDriver) getFilePath(i models.Item) string {
+	return filepath.Join(d.VaultPath, i.VaultName, i.ServerPath)
 }

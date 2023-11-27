@@ -1,15 +1,17 @@
 package processor_v1
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
+	"log/slog"
 	"os"
+	"path/filepath"
 
+	"github.com/Michaelpalacce/gobi/pkg/iops"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
+	"github.com/gorilla/websocket"
 )
 
 // ProcessClientTextMessage will decide how to process the text message.
@@ -29,7 +31,6 @@ func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client
 // processItemSyncMessage adds items to the queue
 // Check if sha256 matches locally
 // Request File if it does not.
-// TODO: Save filesToFetch and implement a resume mechanism for future
 func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var itemsSyncPayload v1.ItemsSyncPayload
 
@@ -38,33 +39,61 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 	}
 
 	client.StorageDriver.Enqueue(itemsSyncPayload.Items)
+	for client.StorageDriver.HasItemsToProcess() {
+		item := client.StorageDriver.GetNext()
+		slog.Debug("Fetching file from server", "item", item)
+
+		client.SendMessage(v1.NewItemFetchMessage(*item))
+
+		// TODO: Move this to the driver
+		var tempFile *os.File
+		var err error
+		if tempFile, err = os.CreateTemp("", "websocket_upload_"); err != nil {
+			return fmt.Errorf("could not create a temp file: %s", err)
+		}
+		defer func() {
+			tempFile.Close()
+		}()
+
+		bytesRead := 0
+		for {
+			messageType, message, err := client.Conn.ReadMessage()
+			if err != nil {
+				return err
+			}
+
+			if messageType != websocket.BinaryMessage {
+				return fmt.Errorf("invalid messageType received: %d, expected 2 (BinaryMessage)", messageType)
+			}
+
+			tempFile.Write(message)
+
+			bytesRead += len(message)
+			fmt.Println(bytesRead)
+			if bytesRead == item.Size {
+				tempFile.Close()
+				break
+			}
+
+			if bytesRead > item.Size {
+				return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
+			}
+		}
+
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("error getting current working directory: %s", err)
+		}
+		filePath := filepath.Join(cwd, "./.dev/clientFolder", item.VaultName, item.ServerPath)
+		slog.Debug("File Fetched Successfully", "item", item, "filePath", filePath)
+		if err := iops.MoveFile(tempFile.Name(), filePath); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
 
-// ProcessClientBinaryMessage will decide how to process the binary message.
 func ProcessClientBinaryMessage(message []byte, client *socket.WebsocketClient) error {
-	fmt.Println("Received binary message")
-
-	// Save the received file
-	err := saveFile("received_file.txt", message)
-	if err != nil {
-		return fmt.Errorf("error saving file: %s", err)
-	}
-
 	return nil
-}
-
-// saveFile will create the file and save the data to it
-// TODO: Make it sure we don't load the entirety of the file in memory before saving it.
-// TODO: what if the file already exists?
-func saveFile(filename string, data []byte) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, bytes.NewReader(data))
-	return err
 }

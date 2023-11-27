@@ -2,6 +2,7 @@ package socket
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
@@ -19,6 +20,7 @@ type WebsocketClient struct {
 	Conn          *websocket.Conn
 	StorageDriver storage.Driver
 	Client        client.Client
+    //TODO: Implement
 	closed        bool
 
 	// Server Exclusive
@@ -52,6 +54,29 @@ func (c *WebsocketClient) SendMessage(message messages.WebsocketRequest) error {
 
 	if err != nil {
 		return fmt.Errorf("error sending message: %s", err)
+	}
+
+	return nil
+}
+
+// SendBigFile will send an item to the client without storing bigger than 1024 chunks in memory
+func (c *WebsocketClient) SendItem(reader io.Reader) error {
+	buffer := make([]byte, 1024)
+
+	for {
+		n, err := reader.Read(buffer)
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return fmt.Errorf("error reading: %s", err)
+		}
+
+		err = c.Conn.WriteMessage(websocket.BinaryMessage, buffer[:n])
+		if err != nil {
+			return fmt.Errorf("error reading file chunk: %s", err)
+		}
 	}
 
 	return nil

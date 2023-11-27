@@ -14,4 +14,6 @@ type Item struct {
 	ServerMTime int `json:"server_m_time" form:"server_m_time" binding:"required" bson:"server_m_time"`
 	// SHA256 contains the server caluclated SHA256 of the file
 	SHA256 string `json:"sha256" form:"sha256" binding:"required" bson:"sha256"`
+	// Size contains the bytes size of the file.
+	Size int `json:"size" form:"size" binding:"required" bson:"size"`
 }

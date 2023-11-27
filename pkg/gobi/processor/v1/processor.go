@@ -3,16 +3,12 @@ package processor_v1
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
-	"os"
 
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
-	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage/metadata"
-	"github.com/gorilla/websocket"
 )
 
 // ProcessServerBinaryMessage will decide how to process the binary message.
@@ -33,6 +29,10 @@ func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client
 		}
 	case v1.SyncType:
 		if err := processSyncMessage(websocketMessage, client); err != nil {
+			return err
+		}
+	case v1.ItemFetchType:
+		if err := processItemSyncMessage(websocketMessage, client); err != nil {
 			return err
 		}
 	default:
@@ -81,30 +81,23 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 	return nil
 }
 
-// sendBigFile will send an item to the client without storing bigger than 1024 chunks in memory
-func sendBigFile(client *socket.WebsocketClient, item models.Item) error {
-	file, err := os.Open(item.ServerPath)
-	if err != nil {
-		return fmt.Errorf("error opening file: %s", err)
+func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
+	var itemFetchPayload v1.ItemFetchPayload
+
+	if err := json.Unmarshal(websocketMessage.Payload, &itemFetchPayload); err != nil {
+		return err
 	}
-	defer file.Close()
 
-	buffer := make([]byte, 1024)
+	item, err := client.StorageDriver.GetReader(itemFetchPayload.Item)
 
-	for {
-		n, err := file.Read(buffer)
-		if err == io.EOF {
-			break
-		}
+	if err != nil {
+		return err
+	}
 
-		if err != nil {
-			return fmt.Errorf("error reading file: %s", err)
-		}
+	defer item.Close()
 
-		err = client.Conn.WriteMessage(websocket.BinaryMessage, buffer[:n])
-		if err != nil {
-			return fmt.Errorf("error reading file chunk: %s", err)
-		}
+	if err := client.SendItem(item); err != nil {
+		return err
 	}
 
 	return nil

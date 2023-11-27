@@ -38,7 +38,7 @@ func main() {
 	flag.StringVar(&username, "username", "test", "Username for authentication")
 	flag.StringVar(&password, "password", "test", "Password for authentication")
 	flag.StringVar(&vaultName, "vaultName", "testVault", "The name of the vault to connect to")
-	flag.StringVar(&vaultPath, "vaultPath", ".dev/client/test", "The path to the vault to watch")
+	flag.StringVar(&vaultPath, "vaultPath", ".dev/clientFolder", "The path to the vault to watch")
 
 	// Parse command-line flags
 	flag.Parse()
@@ -83,10 +83,8 @@ out:
 					LastSync: 0,
 					// LastSync: 1701027954,
 				},
-				Conn: conn,
-				StorageDriver: &storage.LocalDriver{
-					VaultPath: vaultPath,
-				},
+				Conn:          conn,
+				StorageDriver: storage.NewLocalDriver(vaultPath),
 			},
 		}
 

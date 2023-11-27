@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"io"
+
 	"github.com/Michaelpalacce/gobi/pkg/models"
 )
 
@@ -13,7 +15,8 @@ type Event struct {
 // Storage Drivers are responsible for storing what needs to be pushed/pulled and doing requests to sync what is needed
 // Storage Drivers
 type Driver interface {
-	checkIfLocalMatch(i models.Item) bool
-	Enqueue(items []models.Item) error
+	Enqueue(items []models.Item)
 	HasItemsToProcess() bool
+	GetNext() *models.Item
+	GetReader(i models.Item) (io.ReadCloser, error)
 }
