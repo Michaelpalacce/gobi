@@ -51,3 +51,14 @@ func NewItemsSyncMessage(items []models.Item) messages.WebsocketRequest {
 		},
 	}
 }
+
+type TransferStartPayload struct{}
+
+// NewTransferStartPayload is the beginning handshake that the client or server wants to either push or pull data
+func NewTransferStartPayload() messages.WebsocketRequest {
+	return messages.WebsocketRequest{
+		Type:    TransferStartType,
+		Version: 1,
+		Payload: TransferStartPayload{},
+	}
+}

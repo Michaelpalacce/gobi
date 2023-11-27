@@ -73,7 +73,7 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 			return err
 		}
 
-		slog.Debug("Items Found For Sync", "items", items)
+		slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
 
 		client.SendMessage(v1.NewItemsSyncMessage(items))
 	}

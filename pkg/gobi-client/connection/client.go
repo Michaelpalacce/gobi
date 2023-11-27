@@ -66,13 +66,21 @@ func (c *ClientConnection) readMessage(readMessageChan chan<- error) {
 
 out:
 	for {
+		if c.WebsocketClient.StorageDriver.HasItemsToProcess() {
+			slog.Debug("The StorageDriver has items to process")
+			if err := c.WebsocketClient.SendMessage(v1.NewSyncMessage(c.WebsocketClient.Client.LastSync)); err != nil {
+				closeError = err
+				break out
+			}
+		}
+
 		messageType, message, err := c.WebsocketClient.Conn.ReadMessage()
 		slog.Debug("Received message from server", "message", string(message), "messageType", messageType)
 
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 				// The other side has closed the connection gracefully
-				fmt.Println("Connection closed by the server.")
+				slog.Info("Connection closed by the server.")
 				break out
 			}
 

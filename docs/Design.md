@@ -50,6 +50,10 @@
 	- The server will send back what the client needs to do. 
 	- Client will store the changes they need to do and check what has changed locally. We rely on the file change timestamp for information 
 
+## SeqDiagram
+
+https://kroki.io/seqdiag/svg/eNq1kjFPwzAQhff-iqesqJWYKUgopRJrMzCgDo59SU91z2rOBSHEf8eYdohESBhYLOt89753vlM6OjYt3meA9UwSrzG_g1L3Qh2evanJ4xbFg0ZTe9YdnqjWYPcUUQYRspGDFNubkfqKxOFROLLx2NDxRBoVV-lqg1j21JdYzgckkoWI0IAjHRTKYgnepJi-iR23cSaj4S6fw9xeUTx1MljzG0f-yJCJ-pefrFLXWLOkwZBbYEXxayDSwu6MtKTFdkRonXAoc7LrJf88gRy4t3sJr57cFECZ31JcnJ6b-wdLKxImXaDKmLRSjefvj5iE7JnsLivpkLI0r_fs4xPtHwm9
+
 ## Scenarios 
 
 - First time client 

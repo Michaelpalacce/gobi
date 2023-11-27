@@ -9,7 +9,6 @@ import (
 
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
-	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 )
 
@@ -38,17 +37,7 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 		return err
 	}
 
-	filesToFetch := make([]models.Item, len(itemsSyncPayload.Items))
-
-	for _, item := range itemsSyncPayload.Items {
-		if ok := client.StorageDriver.CheckIfLocalMatch(item); !ok {
-			filesToFetch = append(filesToFetch, item)
-		}
-	}
-
-	// Foreach filesToFetch and download them all
-	// for _, item := range filesToFetch {
-	// }
+	client.StorageDriver.Enqueue(itemsSyncPayload.Items)
 
 	return nil
 }
