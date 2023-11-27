@@ -16,9 +16,5 @@ type Item struct {
 
 // Driver interface holds the structure that all storage drivers must adhere to
 type Driver interface {
-	// PushFile will push the given file to the server and set it as the latest reconciled version
-	PushFile(f Item) error
-
-	// PullFile will fetch a file from the server and have it sent out
-	PullFile(filePath string) (Item, error)
+	CheckIfLocalMatch(i models.Item) bool
 }

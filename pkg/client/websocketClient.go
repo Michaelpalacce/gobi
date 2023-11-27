@@ -6,14 +6,16 @@ import (
 
 	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
+	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/gorilla/websocket"
 )
 
 // WebsocketClient contains the connection as well as metadata for a client
 // This is mainly a transport layer connection
 type WebsocketClient struct {
-	Conn *websocket.Conn
-	DB   *database.Database
+	Conn          *websocket.Conn
+	DB            *database.Database
+	StorageDriver storage.Driver
 
 	Client Client
 	closed bool

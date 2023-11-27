@@ -17,7 +17,8 @@ Go Bi-Directional Sync With API
 - [ ] Bi-Directional Syncing
 - [ ] Versioning
 - [ ] Deletion resolution
-- [ ] Conflict Resolution
+- [ ] Conflict resolution
+- [ ] Better server interrupts handling ( send data first and then stop )
 
 ## Principles
 

@@ -17,6 +17,7 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/gobi-client/socket"
 	"github.com/Michaelpalacce/gobi/pkg/logger"
+	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/gorilla/websocket"
 )
 
@@ -37,7 +38,7 @@ func main() {
 	flag.StringVar(&username, "username", "test", "Username for authentication")
 	flag.StringVar(&password, "password", "test", "Password for authentication")
 	flag.StringVar(&vaultName, "vaultName", "testVault", "The name of the vault to connect to")
-	flag.StringVar(&vaultPath, "vaultPath", "./test", "The path to the vault to watch")
+	flag.StringVar(&vaultPath, "vaultPath", ".dev/client/test", "The path to the vault to watch")
 
 	// Parse command-line flags
 	flag.Parse()
@@ -78,12 +79,14 @@ out:
 					// Intentionally hardcoded to latest.
 					Version:   1,
 					VaultName: vaultName,
-					VaultPath: vaultPath,
 					// TODO: Fetch me from somewhere... sqlite???
 					LastSync: 0,
 					// LastSync: 1701027954,
 				},
 				Conn: conn,
+				StorageDriver: &storage.LocalDriver{
+					VaultPath: vaultPath,
+				},
 			},
 		}
 

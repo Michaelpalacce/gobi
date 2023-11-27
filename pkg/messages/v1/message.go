@@ -5,12 +5,11 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/models"
 )
 
-// VaultNamePayload contains the name of the vault the client wants to connect to
 type VaultNamePayload struct {
 	VaultName string `json:"name"`
 }
 
-// NewVaultNameMessage will return a new vault name message
+// NewVaultNameMessage is a message that the client sends to the server telling it which Vault to connect to
 func NewVaultNameMessage(vaultName string) messages.WebsocketRequest {
 	return messages.WebsocketRequest{
 		Type: VaultNameType,
@@ -21,8 +20,6 @@ func NewVaultNameMessage(vaultName string) messages.WebsocketRequest {
 	}
 }
 
-// SyncPayload represents a payload telling the Server that the client wants to sync.
-// Contains the last time the client successfully synced with the server
 type SyncPayload struct {
 	// LastSync is timestamp in UTC
 	LastSync int `json:"lastSync"`
@@ -40,11 +37,11 @@ func NewSyncMessage(lastSync int) messages.WebsocketRequest {
 	}
 }
 
-// ItemSyncPayload cotains data about an item that has had a change since the last reconcillation time
 type ItemSyncPayload struct {
 	Item models.Item `json:"item"`
 }
 
+// NewItemSyncMessage cotains data about an item that has had a change since the last reconcillation time
 func NewItemSyncMessage(item models.Item) messages.WebsocketRequest {
 	return messages.WebsocketRequest{
 		Type:    ItemSyncType,

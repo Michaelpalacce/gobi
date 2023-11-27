@@ -76,14 +76,13 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *clie
 		slog.Debug("Items Found For Sync", "items", items)
 		for _, item := range items {
 			client.SendMessage(v1.NewItemSyncMessage(item.Item))
-			sendBigFile(client, item)
 		}
 	}
 
 	return nil
 }
 
-// sendBigFile will send an item to the client
+// sendBigFile will send an item to the client without storing bigger than 1024 chunks in memory
 func sendBigFile(client *client.WebsocketClient, item storage.Item) error {
 	file, err := os.Open(item.Item.ServerPath)
 	if err != nil {

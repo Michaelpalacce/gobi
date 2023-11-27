@@ -2,16 +2,44 @@ package processor_v1
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
+	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 )
 
 // ProcessClientTextMessage will decide how to process the text message.
 func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+	switch websocketMessage.Type {
+	case v1.ItemSyncType:
+		if err := processItemSyncMessage(websocketMessage, client); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
+	}
+
+	return nil
+}
+
+// processItemSyncMessage adds items to the queue
+// Check if sha256 matches locally
+// Request File if it does not.
+func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+	var itemSyncPayload v1.ItemSyncPayload
+
+	if err := json.Unmarshal(websocketMessage.Payload, &itemSyncPayload); err != nil {
+		return err
+	}
+
+	if ok := client.StorageDriver.CheckIfLocalMatch(itemSyncPayload.Item); !ok {
+		// Fetch the file
+	}
+
 	return nil
 }
 

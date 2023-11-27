@@ -23,6 +23,7 @@ func (d *MongoDriver) Reconcile(lastSync int) ([]storage.Item, error) {
 		"$and": []bson.M{
 			{"server_m_time": bson.M{"$gt": lastSync}},
 			{"owner_id": d.Client.User.ID.Hex()},
+			{"vault_name": d.Client.VaultName},
 		},
 	}
 	// Perform the find operation
