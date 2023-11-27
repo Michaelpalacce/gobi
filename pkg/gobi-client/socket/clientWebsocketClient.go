@@ -102,13 +102,6 @@ out:
 			closeError = fmt.Errorf("error, unknown message type %d", messageType)
 			break out
 		}
-
-		// messageProcess := make(chan error, 1)
-		//
-		// go func(messageProcess chan<- error) {
-		//
-		// }(messageProcess)
-		// // TODO: This should be in a goroutine
 	}
 
 	readMessageChan <- fmt.Errorf("error while communicating with server: %s", closeError)

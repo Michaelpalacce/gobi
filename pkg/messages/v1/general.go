@@ -3,5 +3,5 @@ package v1
 var (
 	VaultNameType = "vaultName"
 	SyncType      = "sync"
-	ItemSyncType  = "itemSync"
+	ItemsSyncType = "itemsSync"
 )

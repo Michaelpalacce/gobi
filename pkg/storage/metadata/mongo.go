@@ -7,7 +7,6 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/models"
-	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -18,7 +17,7 @@ type MongoDriver struct {
 }
 
 // Reconcile will return all files that were changed since last sync
-func (d *MongoDriver) Reconcile(lastSync int) ([]storage.Item, error) {
+func (d *MongoDriver) Reconcile(lastSync int) ([]models.Item, error) {
 	filter := bson.M{
 		"$and": []bson.M{
 			{"server_m_time": bson.M{"$gt": lastSync}},
@@ -37,7 +36,7 @@ func (d *MongoDriver) Reconcile(lastSync int) ([]storage.Item, error) {
 	defer cursor.Close(ctx)
 
 	// Iterate over the results
-	var results []storage.Item
+	var results []models.Item
 	for cursor.Next(context.Background()) {
 		var result models.Item
 
@@ -47,7 +46,7 @@ func (d *MongoDriver) Reconcile(lastSync int) ([]storage.Item, error) {
 			return nil, err
 		}
 
-		results = append(results, storage.Item{Item: result})
+		results = append(results, result)
 	}
 
 	// Check for errors from iterating over cursor

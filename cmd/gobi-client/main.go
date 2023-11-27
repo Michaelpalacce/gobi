@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/Michaelpalacce/gobi/internal/gobi-client/connection"
 	"github.com/Michaelpalacce/gobi/pkg/client"
+	"github.com/Michaelpalacce/gobi/pkg/gobi-client/auth"
 	"github.com/Michaelpalacce/gobi/pkg/gobi-client/socket"
 	"github.com/Michaelpalacce/gobi/pkg/logger"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
@@ -87,6 +87,7 @@ out:
 				StorageDriver: &storage.LocalDriver{
 					VaultPath: vaultPath,
 				},
+				Options: options,
 			},
 		}
 
@@ -108,7 +109,7 @@ out:
 // Supprts only BasicAuth
 func establishConn(options connection.Options) (*websocket.Conn, error) {
 	url := url.URL{Scheme: "ws", Host: options.Host, Path: "/ws/"}
-	header := http.Header{"Authorization": []string{basicAuth(options.Username, options.Password)}}
+	header := http.Header{"Authorization": []string{auth.BasicAuth(options.Username, options.Password)}}
 	dialer := websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
 		HandshakeTimeout: 45 * time.Second,
@@ -130,12 +131,6 @@ func establishConn(options connection.Options) (*websocket.Conn, error) {
 	}
 
 	return conn, nil
-}
-
-// basicAuth returns the Basic Authentication string
-func basicAuth(username, password string) string {
-	auth := username + ":" + password
-	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
 func interrupt(gobiClient *socket.ClientWebsocketClient) {

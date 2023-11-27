@@ -37,17 +37,17 @@ func NewSyncMessage(lastSync int) messages.WebsocketRequest {
 	}
 }
 
-type ItemSyncPayload struct {
-	Item models.Item `json:"item"`
+type ItemsSyncPayload struct {
+	Items []models.Item `json:"items"`
 }
 
-// NewItemSyncMessage cotains data about an item that has had a change since the last reconcillation time
-func NewItemSyncMessage(item models.Item) messages.WebsocketRequest {
+// NewItemsSyncMessage contains data about items that have had a change since the last reconcillation time
+func NewItemsSyncMessage(items []models.Item) messages.WebsocketRequest {
 	return messages.WebsocketRequest{
-		Type:    ItemSyncType,
+		Type:    ItemsSyncType,
 		Version: 1,
-		Payload: ItemSyncPayload{
-			Item: item,
+		Payload: ItemsSyncPayload{
+			Items: items,
 		},
 	}
 }

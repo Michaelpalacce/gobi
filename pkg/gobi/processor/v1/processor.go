@@ -10,7 +10,7 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
-	"github.com/Michaelpalacce/gobi/pkg/storage"
+	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/storage/metadata"
 	"github.com/gorilla/websocket"
 )
@@ -74,17 +74,16 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *clie
 		}
 
 		slog.Debug("Items Found For Sync", "items", items)
-		for _, item := range items {
-			client.SendMessage(v1.NewItemSyncMessage(item.Item))
-		}
+
+		client.SendMessage(v1.NewItemsSyncMessage(items))
 	}
 
 	return nil
 }
 
 // sendBigFile will send an item to the client without storing bigger than 1024 chunks in memory
-func sendBigFile(client *client.WebsocketClient, item storage.Item) error {
-	file, err := os.Open(item.Item.ServerPath)
+func sendBigFile(client *client.WebsocketClient, item models.Item) error {
+	file, err := os.Open(item.ServerPath)
 	if err != nil {
 		return fmt.Errorf("error opening file: %s", err)
 	}

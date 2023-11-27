@@ -34,9 +34,14 @@ func main() {
 		services.NewWebsocketService(db),
 	)
 
+	itemsHandler := *handlers.NewItemsHandler(
+		services.NewItemsService(),
+	)
+
 	r := routes.SetupRouter(
 		usersHandler,
 		websocketHandler,
+		itemsHandler,
 	)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")

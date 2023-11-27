@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/Michaelpalacce/gobi/internal/gobi-client/connection"
 	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
@@ -11,14 +12,20 @@ import (
 )
 
 // WebsocketClient contains the connection as well as metadata for a client
+// Used by both the server and client
 // This is mainly a transport layer connection
 type WebsocketClient struct {
+	// General
 	Conn          *websocket.Conn
-	DB            *database.Database
 	StorageDriver storage.Driver
+	Client        Client
+	closed        bool
 
-	Client Client
-	closed bool
+	// Server Exclusive
+	DB *database.Database
+
+	// Client Exclusive
+	Options connection.Options
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
