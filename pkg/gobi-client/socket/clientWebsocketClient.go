@@ -1,14 +1,12 @@
 package socket
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
-	"os"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
+	processor_v1 "github.com/Michaelpalacce/gobi/pkg/gobi-client/processor/v1"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/gorilla/websocket"
@@ -16,7 +14,7 @@ import (
 
 // ClientWebsocketClient represents a connected WebSocket client
 type ClientWebsocketClient struct {
-	Client *client.WebsocketClient
+	Websocket *client.WebsocketClient
 	// Add any other fields you need for tracking the client
 }
 
@@ -40,22 +38,22 @@ func (c *ClientWebsocketClient) Listen(closeChan chan<- error) {
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
 func (c *ClientWebsocketClient) Close(msg string) {
-	c.Client.Close(msg)
+	c.Websocket.Close(msg)
 }
 
 // init will send the initial data to the server. Stuff like what version is being used and what is the name of the vault
 func (c *ClientWebsocketClient) init(initChan chan<- error) {
-	if err := c.Client.SendMessage(messages.NewVersionMessage(c.Client.Client.Version)); err != nil {
+	if err := c.Websocket.SendMessage(messages.NewVersionMessage(c.Websocket.Client.Version)); err != nil {
 		initChan <- err
 		return
 	}
 
-	if err := c.Client.SendMessage(v1.NewVaultNameMessage(c.Client.Client.VaultName)); err != nil {
+	if err := c.Websocket.SendMessage(v1.NewVaultNameMessage(c.Websocket.Client.VaultName)); err != nil {
 		initChan <- err
 		return
 	}
 
-	if err := c.Client.SendMessage(v1.NewSyncMessage(c.Client.Client.LastSync)); err != nil {
+	if err := c.Websocket.SendMessage(v1.NewSyncMessage(c.Websocket.Client.LastSync)); err != nil {
 		initChan <- err
 		return
 	}
@@ -68,7 +66,7 @@ func (c *ClientWebsocketClient) readMessage(readMessageChan chan<- error) {
 
 out:
 	for {
-		messageType, message, err := c.Client.Conn.ReadMessage()
+		messageType, message, err := c.Websocket.Conn.ReadMessage()
 		slog.Debug("Received message from server", "message", string(message), "messageType", messageType)
 
 		if err != nil {
@@ -130,7 +128,7 @@ func (c *ClientWebsocketClient) processTextMessage(message []byte) error {
 			return err
 		}
 	case 1:
-		if err := v1.ProcessClientTextMessage(websocketMessage, c.Client); err != nil {
+		if err := processor_v1.ProcessClientTextMessage(websocketMessage, c.Websocket); err != nil {
 			return err
 		}
 	default:
@@ -150,33 +148,19 @@ func (c *ClientWebsocketClient) processV0(websocketMessage messages.WebsocketMes
 }
 
 // processBinaryMessage will process different types of binary messages
-// TODO: finish this. We need to send the file name as well as location here too
+// When processing the binary message we need to know where to store it
 func (c *ClientWebsocketClient) processBinaryMessage(message []byte) error {
-	fmt.Println("Received binary message")
-
-	// Save the received file
-	err := saveFile("received_file.txt", message)
-	if err != nil {
-		return fmt.Errorf("error saving file: %s", err)
+	if err := processor_v1.ProcessClientBinaryMessage(message, c.Websocket); err != nil {
+		return err
 	}
 
 	return nil
-}
 
-func saveFile(filename string, data []byte) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, bytes.NewReader(data))
-	return err
 }
 
 // processPingMessage will send a PongMessage and nothing else
 func (c *ClientWebsocketClient) processPingMessage(message []byte) error {
-	if err := c.Client.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
+	if err := c.Websocket.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
 		return fmt.Errorf("error sending message: %s", err)
 	}
 

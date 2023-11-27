@@ -6,8 +6,8 @@ import (
 	"log/slog"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
+	processor_v1 "github.com/Michaelpalacce/gobi/pkg/gobi/processor/v1"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
-	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/gorilla/websocket"
 )
 
@@ -88,7 +88,7 @@ func (c *ServerWebsocketClient) processTextMessage(message []byte) error {
 			return err
 		}
 	case 1:
-		if err := v1.ProcessServerTextMessage(websocketMessage, c.Client); err != nil {
+		if err := processor_v1.ProcessServerTextMessage(websocketMessage, c.Client); err != nil {
 			return err
 		}
 	default:
@@ -127,7 +127,7 @@ func (c *ServerWebsocketClient) processBinaryMessage(message []byte) error {
 
 	switch websocketMessage.Version {
 	case 1:
-		if err := v1.ProcessServerBinaryMessage(websocketMessage, c.Client); err != nil {
+		if err := processor_v1.ProcessServerBinaryMessage(websocketMessage, c.Client); err != nil {
 			return err
 		}
 	default:

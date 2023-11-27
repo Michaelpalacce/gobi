@@ -1,4 +1,4 @@
-package v1
+package processor_v1
 
 import (
 	"encoding/json"
@@ -9,10 +9,16 @@ import (
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
+	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/Michaelpalacce/gobi/pkg/storage/metadata"
 	"github.com/gorilla/websocket"
 )
+
+// ProcessServerBinaryMessage will decide how to process the binary message.
+func ProcessServerBinaryMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
+	return nil
+}
 
 // ProcessServerTextMessage will decide how to process the text message.
 func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
@@ -21,11 +27,11 @@ func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client
 	}
 
 	switch websocketMessage.Type {
-	case VaultNameType:
+	case v1.VaultNameType:
 		if err := processVaultNameMessage(websocketMessage, client); err != nil {
 			return err
 		}
-	case SyncType:
+	case v1.SyncType:
 		if err := processSyncMessage(websocketMessage, client); err != nil {
 			return err
 		}
@@ -38,7 +44,7 @@ func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client
 
 // processVaultNameMessage will set the VaultName in the client if when it's sent
 func processVaultNameMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
-	var vaultNamePayload VaultNamePayload
+	var vaultNamePayload v1.VaultNamePayload
 
 	if err := json.Unmarshal(websocketMessage.Payload, &vaultNamePayload); err != nil {
 		return err
@@ -51,7 +57,7 @@ func processVaultNameMessage(websocketMessage messages.WebsocketMessage, client 
 
 // processSyncMessage will start sending data to the client that needs to be synced up
 func processSyncMessage(websocketMessage messages.WebsocketMessage, client *client.WebsocketClient) error {
-	var syncPayload SyncPayload
+	var syncPayload v1.SyncPayload
 
 	if err := json.Unmarshal(websocketMessage.Payload, &syncPayload); err != nil {
 		return err
@@ -69,7 +75,7 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *clie
 
 		slog.Debug("Items Found For Sync", "items", items)
 		for _, item := range items {
-			client.SendMessage(NewItemSyncMessage(item.Item))
+			client.SendMessage(v1.NewItemSyncMessage(item.Item))
 			sendBigFile(client, item)
 		}
 	}

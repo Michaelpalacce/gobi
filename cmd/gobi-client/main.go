@@ -25,11 +25,12 @@ func main() {
 
 	// Define command-line flags for username and password
 	var (
-		username  string
-		host      string
-		password  string
-		vaultName string
-		vaultPath string
+		username   string
+		host       string
+		password   string
+		vaultName  string
+		vaultPath  string
+		gobiClient *socket.ClientWebsocketClient
 	)
 
 	flag.StringVar(&host, "host", "localhost:8080", "Target host")
@@ -48,10 +49,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Set up a channel to handle signals for graceful shutdown
-	interrupt := make(chan os.Signal, 1)
-	signal.Notify(interrupt, os.Interrupt)
-	defer close(interrupt)
+	go interrupt(gobiClient)
 
 out:
 	for {
@@ -74,9 +72,8 @@ out:
 			break out
 		}
 
-		// establish connection to the server
-		client := socket.ClientWebsocketClient{
-			Client: &client.WebsocketClient{
+		gobiClient = &socket.ClientWebsocketClient{
+			Websocket: &client.WebsocketClient{
 				Client: client.Client{
 					// Intentionally hardcoded to latest.
 					Version:   1,
@@ -90,21 +87,16 @@ out:
 			},
 		}
 
-		go client.Listen(closeChan)
+		go gobiClient.Listen(closeChan)
 
-		select {
-		case err := <-closeChan:
-			if err != nil {
-				slog.Error("Closing connection due to error with server", "error", err)
-				client.Close(err.Error())
-			}
+		err = <-closeChan
 
-			client.Close("")
-		case <-interrupt:
-			client.Close("os.Interrupt received. Closing connection.")
-			break out
+		if err != nil {
+			slog.Error("Closing connection due to error with server", "error", err)
+			gobiClient.Close(err.Error())
 		}
 
+		gobiClient.Close("")
 		time.Sleep(5 * time.Second)
 	}
 }
@@ -141,4 +133,19 @@ func establishConn(options connection.Options) (*websocket.Conn, error) {
 func basicAuth(username, password string) string {
 	auth := username + ":" + password
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
+}
+
+func interrupt(gobiClient *socket.ClientWebsocketClient) {
+	// Set up a channel to handle signals for graceful shutdown
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+	defer close(interrupt)
+
+	<-interrupt
+
+	if gobiClient != nil {
+		gobiClient.Close("os.Interrupt received. Closing connection.")
+	}
+
+	os.Exit(1)
 }
