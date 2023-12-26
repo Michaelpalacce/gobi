@@ -101,7 +101,7 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 	}
 	item := itemSavePayload.Item
 
-	slog.Debug("Fetching file from server", "item", item)
+	slog.Debug("Fetching file from client", "item", item)
 
 	client.SendMessage(v1.NewItemFetchMessage(item))
 
