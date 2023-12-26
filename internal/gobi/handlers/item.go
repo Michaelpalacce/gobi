@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/Michaelpalacce/gobi/internal/gobi/services"
+	"github.com/Michaelpalacce/gobi/pkg/gobi/services"
 	"github.com/gin-gonic/gin"
 )
 

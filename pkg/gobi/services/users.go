@@ -75,7 +75,6 @@ func (u UsersService) DeleteUser(id string) error {
 	defer cancel()
 
 	objectId, err := primitive.ObjectIDFromHex(id)
-
 	if err != nil {
 		return err
 	}
@@ -93,9 +92,8 @@ func (u UsersService) GetUser(id string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var user = &models.User{}
+	user := &models.User{}
 	objectId, err := primitive.ObjectIDFromHex(id)
-
 	if err != nil {
 		return nil, err
 	}
@@ -116,10 +114,9 @@ func (u UsersService) GetUserByName(username string) (*models.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var user = &models.User{}
+	user := &models.User{}
 
 	err := userCollection.FindOne(ctx, bson.D{{Key: "username", Value: username}}).Decode(user)
-
 	if err != nil {
 		return nil, err
 	}

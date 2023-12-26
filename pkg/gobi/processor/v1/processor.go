@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
+	"github.com/Michaelpalacce/gobi/pkg/gobi/services"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
@@ -91,6 +93,9 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 		err             error
 	)
 
+	client.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	defer client.Conn.SetReadDeadline(time.Time{})
+
 	if err = json.Unmarshal(websocketMessage.Payload, &itemSavePayload); err != nil {
 		return err
 	}
@@ -110,7 +115,6 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 	}()
 
 	bytesRead := 0
-	// @TODO: add a timeout here
 	for {
 		messageType, message, err := client.Conn.ReadMessage()
 		if err != nil {
@@ -135,7 +139,12 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 	}
 	slog.Debug("File Fetched Successfully", "item", item)
 
-	// @TODO: After saving the file, we need to update the database with the new file information
+	itemsService := services.NewItemsService(client.DB)
+
+	err = itemsService.Upsert(&item)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

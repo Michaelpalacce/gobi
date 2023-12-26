@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Michaelpalacce/gobi/internal/gobi/services"
 	"github.com/Michaelpalacce/gobi/pkg/digest"
+	"github.com/Michaelpalacce/gobi/pkg/gobi/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -51,7 +51,6 @@ func BasicAuth(userService *services.UsersService) gin.HandlerFunc {
 		}
 
 		user, err := userService.GetUserByName(credentials[0])
-
 		// Check if the user exists
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Error fetching user by that name"})

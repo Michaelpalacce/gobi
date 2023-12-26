@@ -20,7 +20,6 @@ type WebsocketClient struct {
 	Conn          *websocket.Conn
 	StorageDriver storage.Driver
 	Client        client.Client
-    //TODO: Implement
 	closed        bool
 
 	// Server Exclusive
@@ -51,7 +50,6 @@ func (c *WebsocketClient) SendMessage(message messages.WebsocketRequest) error {
 	messageBytes := message.Marshal()
 	slog.Debug("Sending message", "message", string(messageBytes))
 	err := c.Conn.WriteMessage(websocket.TextMessage, messageBytes)
-
 	if err != nil {
 		return fmt.Errorf("error sending message: %s", err)
 	}

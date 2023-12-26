@@ -25,6 +25,7 @@ type WebsocketService struct {
 	DB *database.Database
 }
 
+// NewWebsocketService should only be created once by the server
 func NewWebsocketService(db *database.Database) WebsocketService {
 	return WebsocketService{
 		connectedClients: make(map[*connection.ServerConnection]bool),

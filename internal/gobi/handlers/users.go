@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Michaelpalacce/gobi/internal/gobi/services"
+	"github.com/Michaelpalacce/gobi/pkg/gobi/services"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,7 +25,7 @@ func NewUsersHandler(service *services.UsersService) *UsersHandler {
 // Returns 201 if the user is created successfully
 // The password will be hashed, so we don't store it
 func (h UsersHandler) CreateUser(c *gin.Context) {
-	var user = &models.User{}
+	user := &models.User{}
 
 	if err := c.ShouldBindJSON(user); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to bind user: %s", err).Error()})

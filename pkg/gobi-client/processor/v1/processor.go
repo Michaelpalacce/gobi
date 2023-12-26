@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
@@ -28,8 +29,12 @@ func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client
 // processItemSyncMessage adds items to the queue
 // Check if sha256 matches locally
 // Request File if it does not.
+// If a file is not sent back in 30 seconds, close the connection
 func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var itemsSyncPayload v1.ItemsSyncPayload
+
+	client.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	defer client.Conn.SetReadDeadline(time.Time{})
 
 	if err := json.Unmarshal(websocketMessage.Payload, &itemsSyncPayload); err != nil {
 		return err
@@ -52,7 +57,6 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 		}()
 
 		bytesRead := 0
-		// @TODO: add a timeout here
 		for {
 			messageType, message, err := client.Conn.ReadMessage()
 			if err != nil {
@@ -77,6 +81,7 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 		}
 		slog.Debug("File Fetched Successfully", "item", item)
 	}
+	// After the queue is empty, check for any local changes and send them to the server
 
 	return nil
 }
