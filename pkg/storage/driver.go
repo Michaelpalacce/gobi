@@ -20,9 +20,13 @@ type Driver interface {
 
 	GetNext() *models.Item
 
+	EnqueueItemsSince(lastSyncTime int, vaultName string)
+
 	GetReader(i models.Item) (io.ReadCloser, error)
 
 	GetWriter(i models.Item) (io.WriteCloser, error)
 
 	Exists(i models.Item) bool
+
+	CalculateSHA256(i models.Item) string
 }

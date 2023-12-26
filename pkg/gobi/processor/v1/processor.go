@@ -101,6 +101,11 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 	}
 	item := itemSavePayload.Item
 
+	// if item.SHA256 == client.StorageDriver.CalculateSHA256(item) {
+	// 	slog.Debug("Item already exists locally", "item", item)
+	// 	return nil
+	// }
+
 	slog.Debug("Fetching file from client", "item", item)
 
 	client.SendMessage(v1.NewItemFetchMessage(item))
@@ -141,7 +146,7 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 
 	itemsService := services.NewItemsService(client.DB)
 
-	err = itemsService.Upsert(&item)
+	err = itemsService.Upsert(&item, client.Client.User.ID)
 	if err != nil {
 		return err
 	}

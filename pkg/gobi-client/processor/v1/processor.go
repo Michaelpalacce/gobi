@@ -19,8 +19,34 @@ func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client
 		if err := processItemSyncMessage(websocketMessage, client); err != nil {
 			return err
 		}
+	case v1.ItemFetchType:
+		if err := processItemFetchMessage(websocketMessage, client); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
+	}
+
+	return nil
+}
+
+// processItemFetchMessage will start sending data to the client about the requested file
+func processItemFetchMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
+	var itemFetchPayload v1.ItemFetchPayload
+
+	if err := json.Unmarshal(websocketMessage.Payload, &itemFetchPayload); err != nil {
+		return err
+	}
+
+	item, err := client.StorageDriver.GetReader(itemFetchPayload.Item)
+	if err != nil {
+		return err
+	}
+
+	defer item.Close()
+
+	if err := client.SendItem(item); err != nil {
+		return err
 	}
 
 	return nil
@@ -82,6 +108,9 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 		slog.Debug("File Fetched Successfully", "item", item)
 	}
 	// After the queue is empty, check for any local changes and send them to the server
+	client.StorageDriver.EnqueueItemsSince(client.Client.LastSync, client.Client.VaultName)
+
+	client.Client.LastSync = int(time.Now().Unix())
 
 	return nil
 }

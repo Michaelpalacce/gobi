@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/Michaelpalacce/gobi/pkg/digest"
 	"github.com/Michaelpalacce/gobi/pkg/models"
@@ -95,4 +96,54 @@ func (d *LocalDriver) Exists(i models.Item) bool {
 // getFilePath will return the absolute path to the file
 func (d *LocalDriver) getFilePath(i models.Item) string {
 	return filepath.Join(d.VaultsPath, i.VaultName, i.ServerPath)
+}
+
+// CalculateSHA256 will return the SHA256 of the given item
+func (d *LocalDriver) CalculateSHA256(i models.Item) string {
+	digest, err := digest.FileSHA256(d.getFilePath(i))
+	if err != nil {
+		return ""
+	}
+
+	return digest
+}
+
+func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
+	vaultPath, err := filepath.Abs(filepath.Join(d.VaultsPath, vaultName))
+	if err != nil {
+		slog.Error("Error getting vault path", "error", err)
+		return
+	}
+
+	filepath.WalkDir(vaultPath, func(path string, info os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		slog.Debug("EnqueueItemsSince", "realPath", path)
+
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			return err
+		}
+
+		if fileInfo.ModTime().Unix() < int64(lastSyncTime) {
+			return nil
+		}
+
+		item := models.Item{
+			VaultName:  vaultName,
+			ServerPath: strings.Replace(path, vaultPath+"/", "", 1),
+			Size:       int(fileInfo.Size()),
+		}
+
+		item.SHA256 = d.CalculateSHA256(item)
+
+		d.queue = append(d.queue, item)
+		return nil
+	})
+	slog.Debug("EnqueueItemsSince", "queue", d.queue)
 }

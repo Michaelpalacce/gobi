@@ -66,6 +66,13 @@ func (c *ClientConnection) readMessage(readMessageChan chan<- error) {
 
 out:
 	for {
+
+		if c.WebsocketClient.StorageDriver.HasItemsToProcess() {
+			item := c.WebsocketClient.StorageDriver.GetNext()
+			slog.Debug("Sending file to server", "item", item)
+			c.WebsocketClient.SendMessage(v1.NewItemSavePayload(*item))
+		}
+
 		messageType, message, err := c.WebsocketClient.Conn.ReadMessage()
 		slog.Debug("Received message from server", "message", string(message), "messageType", messageType)
 
@@ -136,7 +143,7 @@ func (c *ClientConnection) processTextMessage(message []byte) error {
 func (c *ClientConnection) processV0(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
 	default:
-		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
+		return fmt.Errorf("unknown websocket message type: %s for version 0", websocketMessage.Type)
 	}
 }
 
@@ -148,7 +155,6 @@ func (c *ClientConnection) processBinaryMessage(message []byte) error {
 	}
 
 	return nil
-
 }
 
 // processPingMessage will send a PongMessage and nothing else
