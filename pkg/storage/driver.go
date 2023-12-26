@@ -20,6 +20,8 @@ type Driver interface {
 
 	GetNext() *models.Item
 
+	GetAllItems() []models.Item
+
 	EnqueueItemsSince(lastSyncTime int, vaultName string)
 
 	GetReader(i models.Item) (io.ReadCloser, error)

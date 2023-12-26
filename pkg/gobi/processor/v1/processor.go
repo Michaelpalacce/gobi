@@ -6,11 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Michaelpalacce/gobi/pkg/gobi/services"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
-	"github.com/Michaelpalacce/gobi/pkg/storage/metadata"
 	"github.com/gorilla/websocket"
 )
 
@@ -69,15 +67,15 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 	if err := json.Unmarshal(websocketMessage.Payload, &syncPayload); err != nil {
 		return err
 	} else {
-		mongoDriver := metadata.MongoDriver{
-			DB:     client.DB,
-			Client: &client.Client,
-		}
-
-		items, err := mongoDriver.Reconcile(syncPayload.LastSync)
+		client.StorageDriver.EnqueueItemsSince(
+			syncPayload.LastSync,
+			client.Client.VaultName,
+		)
 		if err != nil {
 			return err
 		}
+
+		items := client.StorageDriver.GetAllItems()
 
 		slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
 
@@ -119,6 +117,11 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 		writer.Close()
 	}()
 
+	if item.Size == 0 {
+		slog.Debug("File is empty", "item", item)
+		return nil
+	}
+
 	bytesRead := 0
 	for {
 		messageType, message, err := client.Conn.ReadMessage()
@@ -144,12 +147,12 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 	}
 	slog.Debug("File Fetched Successfully", "item", item)
 
-	itemsService := services.NewItemsService(client.DB)
-
-	err = itemsService.Upsert(&item, client.Client.User.ID)
-	if err != nil {
-		return err
-	}
+	// itemsService := services.NewItemsService(client.DB)
+	//
+	// err = itemsService.Upsert(&item, client.Client.User.ID)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }

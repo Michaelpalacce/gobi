@@ -46,6 +46,13 @@ func (d *LocalDriver) GetNext() *models.Item {
 	return nil
 }
 
+func (d *LocalDriver) GetAllItems() []models.Item {
+	queue := d.queue
+	d.queue = make([]models.Item, 0)
+
+	return queue
+}
+
 // CheckIfLocalMatch will build up the correct filePath based on the item and check if what we have locally matches.
 // Checks by filePath and SHA256
 func (d *LocalDriver) checkIfLocalMatch(i models.Item) bool {
@@ -80,7 +87,20 @@ func (d *LocalDriver) GetReader(i models.Item) (io.ReadCloser, error) {
 
 // GetWriter should be used to get a writer for the given item, when you want to save it
 func (d *LocalDriver) GetWriter(i models.Item) (io.WriteCloser, error) {
-	file, err := os.OpenFile(d.getFilePath(i), os.O_RDWR|os.O_CREATE, 0o666)
+	path := d.getFilePath(i)
+	dirPath := filepath.Dir(path)
+	absPath, err := filepath.Abs(dirPath)
+	if err != nil {
+		return nil, fmt.Errorf("error getting absolute path: %s", err)
+	}
+
+	// Use os.MkdirAll to create the directory and its parents
+	err = os.MkdirAll(absPath, os.ModePerm)
+	if err != nil {
+		return nil, fmt.Errorf("error creating directory: %s", err)
+	}
+
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o666)
 	if err != nil {
 		return nil, fmt.Errorf("error opening file: %s", err)
 	}
@@ -108,6 +128,7 @@ func (d *LocalDriver) CalculateSHA256(i models.Item) string {
 	return digest
 }
 
+// EnqueueItemsSince will add all items that have been modified since the given lastSyncTime to the queue
 func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
 	vaultPath, err := filepath.Abs(filepath.Join(d.VaultsPath, vaultName))
 	if err != nil {
@@ -122,8 +143,6 @@ func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
 		if info.IsDir() {
 			return nil
 		}
-
-		slog.Debug("EnqueueItemsSince", "realPath", path)
 
 		fileInfo, err := os.Stat(path)
 		if err != nil {

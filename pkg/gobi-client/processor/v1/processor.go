@@ -82,6 +82,11 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 			writer.Close()
 		}()
 
+		if item.Size == 0 {
+			slog.Debug("File Fetched Successfully", "item", item)
+			continue
+		}
+
 		bytesRead := 0
 		for {
 			messageType, message, err := client.Conn.ReadMessage()
