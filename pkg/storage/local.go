@@ -12,18 +12,19 @@ import (
 )
 
 type LocalDriver struct {
-	VaultPath string
-	queue     []models.Item
+	VaultsPath string
+	queue      []models.Item
 }
 
-func NewLocalDriver(vaultPath string) *LocalDriver {
+func NewLocalDriver(vaultsPath string) *LocalDriver {
 	return &LocalDriver{
-		VaultPath: vaultPath,
-		queue:     make([]models.Item, 0),
+		VaultsPath: vaultsPath,
+		queue:      make([]models.Item, 0),
 	}
 }
 
 // Enqueue adds the given items array to the queue for later processing.
+// Will not add items that are already in the local storage, based on filePath and SHA256
 func (d *LocalDriver) Enqueue(items []models.Item) {
 	for _, item := range items {
 		if ok := d.checkIfLocalMatch(item); !ok {
@@ -78,7 +79,7 @@ func (d *LocalDriver) GetReader(i models.Item) (io.ReadCloser, error) {
 
 // GetWriter should be used to get a writer for the given item, when you want to save it
 func (d *LocalDriver) GetWriter(i models.Item) (io.WriteCloser, error) {
-	file, err := os.Open(d.getFilePath(i))
+	file, err := os.OpenFile(d.getFilePath(i), os.O_RDWR|os.O_CREATE, 0o666)
 	if err != nil {
 		return nil, fmt.Errorf("error opening file: %s", err)
 	}
@@ -86,7 +87,12 @@ func (d *LocalDriver) GetWriter(i models.Item) (io.WriteCloser, error) {
 	return file, nil
 }
 
+func (d *LocalDriver) Exists(i models.Item) bool {
+	_, err := os.Stat(d.getFilePath(i))
+	return err == nil
+}
+
 // getFilePath will return the absolute path to the file
 func (d *LocalDriver) getFilePath(i models.Item) string {
-	return filepath.Join(d.VaultPath, i.VaultName, i.ServerPath)
+	return filepath.Join(d.VaultsPath, i.VaultName, i.ServerPath)
 }

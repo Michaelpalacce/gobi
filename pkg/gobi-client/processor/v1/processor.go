@@ -4,10 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
 
-	"github.com/Michaelpalacce/gobi/pkg/iops"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
@@ -45,14 +42,13 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 
 		client.SendMessage(v1.NewItemFetchMessage(*item))
 
-		// TODO: Move this to the driver
-		var tempFile *os.File
-		var err error
-		if tempFile, err = os.CreateTemp("", "websocket_upload_"); err != nil {
-			return fmt.Errorf("could not create a temp file: %s", err)
+		writer, err := client.StorageDriver.GetWriter(*item)
+		if err != nil {
+			return err
 		}
+
 		defer func() {
-			tempFile.Close()
+			writer.Close()
 		}()
 
 		bytesRead := 0
@@ -67,12 +63,11 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 				return fmt.Errorf("invalid messageType received: %d, expected 2 (BinaryMessage)", messageType)
 			}
 
-			tempFile.Write(message)
+			writer.Write(message)
 
 			bytesRead += len(message)
-			fmt.Println(bytesRead)
 			if bytesRead == item.Size {
-				tempFile.Close()
+				writer.Close()
 				break
 			}
 
@@ -80,17 +75,7 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 				return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
 			}
 		}
-
-		cwd, err := os.Getwd()
-		if err != nil {
-			return fmt.Errorf("error getting current working directory: %s", err)
-		}
-		// @TODO: This needs to be changed to the correct path, also needs to have the user as well
-		filePath := filepath.Join(cwd, "./.dev/clientFolder", item.VaultName, item.ServerPath)
-		slog.Debug("File Fetched Successfully", "item", item, "filePath", filePath)
-		if err := iops.MoveFile(tempFile.Name(), filePath); err != nil {
-			return err
-		}
+		slog.Debug("File Fetched Successfully", "item", item)
 	}
 
 	return nil

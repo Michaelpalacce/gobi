@@ -39,9 +39,9 @@ func (s *WebsocketService) HandleConnection(conn *websocket.Conn, user models.Us
 	client := &connection.ServerConnection{Client: &socket.WebsocketClient{
 		DB:   s.DB,
 		Conn: conn,
-        StorageDriver: &storage.LocalDriver{
-            VaultPath: os.Getenv("LOCAL_VAULTS_LOCATION"),
-        },
+		StorageDriver: storage.NewLocalDriver(
+			os.Getenv("LOCAL_VAULTS_LOCATION"),
+		),
 
 		Client: client.Client{
 			User: user,
@@ -57,9 +57,8 @@ func (s *WebsocketService) HandleConnection(conn *websocket.Conn, user models.Us
 	go client.Listen(closeChannel)
 
 	err := <-closeChannel
-
 	if err != nil {
-		slog.Error("Closing connection due to error with client", "error", err)
+		slog.Error("Closing connection due to an error", "error", err)
 		client.Close(err.Error())
 	}
 

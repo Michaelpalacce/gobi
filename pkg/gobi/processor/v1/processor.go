@@ -4,10 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
 
-	"github.com/Michaelpalacce/gobi/pkg/iops"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
@@ -36,11 +33,11 @@ func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client
 			return err
 		}
 	case v1.ItemFetchType:
-		if err := processItemSyncMessage(websocketMessage, client); err != nil {
+		if err := processItemFetchMessage(websocketMessage, client); err != nil {
 			return err
 		}
 	case v1.ItemSaveType:
-		if err := processItemSyncMessage(websocketMessage, client); err != nil {
+		if err := processItemSaveMessage(websocketMessage, client); err != nil {
 			return err
 		}
 	default:
@@ -89,31 +86,27 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 }
 
 func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
-	var itemSavePayload v1.ItemSavePayload
+	var (
+		itemSavePayload v1.ItemSavePayload
+		err             error
+	)
 
-	if err := json.Unmarshal(websocketMessage.Payload, &itemSavePayload); err != nil {
+	if err = json.Unmarshal(websocketMessage.Payload, &itemSavePayload); err != nil {
 		return err
 	}
 	item := itemSavePayload.Item
-
-	itemWriter, err := client.StorageDriver.GetWriter(itemSavePayload.Item)
-	if err != nil {
-		return err
-	}
-
-	defer itemWriter.Close()
 
 	slog.Debug("Fetching file from server", "item", item)
 
 	client.SendMessage(v1.NewItemFetchMessage(item))
 
-	// TODO: Move this to the driver
-	var tempFile *os.File
-	if tempFile, err = os.CreateTemp("", "websocket_upload_"); err != nil {
-		return fmt.Errorf("could not create a temp file: %s", err)
+	writer, err := client.StorageDriver.GetWriter(item)
+	if err != nil {
+		return err
 	}
+
 	defer func() {
-		tempFile.Close()
+		writer.Close()
 	}()
 
 	bytesRead := 0
@@ -128,12 +121,11 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 			return fmt.Errorf("invalid messageType received: %d, expected 2 (BinaryMessage)", messageType)
 		}
 
-		tempFile.Write(message)
+		writer.Write(message)
 
 		bytesRead += len(message)
-		fmt.Println(bytesRead)
 		if bytesRead == item.Size {
-			tempFile.Close()
+			writer.Close()
 			break
 		}
 
@@ -141,24 +133,15 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 			return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
 		}
 	}
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("error getting current working directory: %s", err)
-	}
-	// @TODO: This needs to be changed to the correct path, also needs to have the user as well
-	filePath := filepath.Join(cwd, "./.dev", item.VaultName, item.ServerPath)
-	slog.Debug("File Fetched Successfully", "item", item, "filePath", filePath)
-	if err := iops.MoveFile(tempFile.Name(), filePath); err != nil {
-		return err
-	}
+	slog.Debug("File Fetched Successfully", "item", item)
 
 	// @TODO: After saving the file, we need to update the database with the new file information
 
 	return nil
 }
 
-func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
+// processItemFetchMessage will start sending data to the client about the requested file
+func processItemFetchMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var itemFetchPayload v1.ItemFetchPayload
 
 	if err := json.Unmarshal(websocketMessage.Payload, &itemFetchPayload); err != nil {
