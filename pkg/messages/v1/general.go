@@ -5,4 +5,5 @@ var (
 	SyncType      = "sync"
 	ItemsSyncType = "itemsSync"
 	ItemFetchType = "itemFetch"
+	ItemSaveType  = "itemSave"
 )

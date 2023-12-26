@@ -49,13 +49,11 @@ func (d *LocalDriver) GetNext() *models.Item {
 func (d *LocalDriver) checkIfLocalMatch(i models.Item) bool {
 	absFilePath := d.getFilePath(i)
 	_, err := os.Stat(absFilePath)
-
 	if err != nil {
 		return false
 	}
 
 	sha256, err := digest.FileSHA256(absFilePath)
-
 	if err != nil {
 		return false
 	}
@@ -68,10 +66,9 @@ func (d *LocalDriver) HasItemsToProcess() bool {
 	return len(d.queue) > 0
 }
 
-// GetReader will return a new ReadCloser for the item
+// GetReader should be used to get a reader for the given item, when you want to send it
 func (d *LocalDriver) GetReader(i models.Item) (io.ReadCloser, error) {
 	file, err := os.Open(d.getFilePath(i))
-
 	if err != nil {
 		return nil, fmt.Errorf("error opening file: %s", err)
 	}
@@ -79,6 +76,17 @@ func (d *LocalDriver) GetReader(i models.Item) (io.ReadCloser, error) {
 	return file, nil
 }
 
+// GetWriter should be used to get a writer for the given item, when you want to save it
+func (d *LocalDriver) GetWriter(i models.Item) (io.WriteCloser, error) {
+	file, err := os.Open(d.getFilePath(i))
+	if err != nil {
+		return nil, fmt.Errorf("error opening file: %s", err)
+	}
+
+	return file, nil
+}
+
+// getFilePath will return the absolute path to the file
 func (d *LocalDriver) getFilePath(i models.Item) string {
 	return filepath.Join(d.VaultPath, i.VaultName, i.ServerPath)
 }

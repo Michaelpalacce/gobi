@@ -56,6 +56,7 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 		}()
 
 		bytesRead := 0
+		// @TODO: add a timeout here
 		for {
 			messageType, message, err := client.Conn.ReadMessage()
 			if err != nil {
@@ -84,6 +85,7 @@ func processItemSyncMessage(websocketMessage messages.WebsocketMessage, client *
 		if err != nil {
 			return fmt.Errorf("error getting current working directory: %s", err)
 		}
+		// @TODO: This needs to be changed to the correct path, also needs to have the user as well
 		filePath := filepath.Join(cwd, "./.dev/clientFolder", item.VaultName, item.ServerPath)
 		slog.Debug("File Fetched Successfully", "item", item, "filePath", filePath)
 		if err := iops.MoveFile(tempFile.Name(), filePath); err != nil {

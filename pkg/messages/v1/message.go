@@ -5,6 +5,7 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/models"
 )
 
+// VaultNamePayload stores the name of the vault that the client wants to connect to
 type VaultNamePayload struct {
 	VaultName string `json:"name"`
 }
@@ -20,6 +21,7 @@ func NewVaultNameMessage(vaultName string) messages.WebsocketRequest {
 	}
 }
 
+// SyncPayload stores the last time the client synced with the server
 type SyncPayload struct {
 	// LastSync is timestamp in UTC
 	LastSync int `json:"lastSync"`
@@ -37,6 +39,7 @@ func NewSyncMessage(lastSync int) messages.WebsocketRequest {
 	}
 }
 
+// ItemsSyncPayload stores the items that have changed since the last sync
 type ItemsSyncPayload struct {
 	Items []models.Item `json:"items"`
 }
@@ -52,6 +55,7 @@ func NewItemsSyncMessage(items []models.Item) messages.WebsocketRequest {
 	}
 }
 
+// ItemFetchPayload stores the item that the client wants to get
 type ItemFetchPayload struct {
 	Item models.Item `json:"item"`
 }
@@ -62,6 +66,22 @@ func NewItemFetchMessage(item models.Item) messages.WebsocketRequest {
 		Type:    ItemFetchType,
 		Version: 1,
 		Payload: ItemFetchPayload{
+			Item: item,
+		},
+	}
+}
+
+// ItemSavePayload stores the item that the client wants to save to the server
+type ItemSavePayload struct {
+	Item models.Item `json:"item"`
+}
+
+// NewItemSavePayload is a message that notifies the server that the client wants to save a specific file
+func NewItemSavePayload(item models.Item) messages.WebsocketRequest {
+	return messages.WebsocketRequest{
+		Type:    ItemSaveType,
+		Version: 1,
+		Payload: ItemSavePayload{
 			Item: item,
 		},
 	}
