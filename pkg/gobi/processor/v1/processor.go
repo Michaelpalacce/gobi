@@ -156,9 +156,10 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 	item := itemSavePayload.Item
 
 	if item.SHA256 == client.StorageDriver.CalculateSHA256(item) {
-		// @TODO: Touch the file, update the mtime
-		// Do the same for the client
-		// Other clients should see the change and update their mtime
+		// @TODO: touch the files in peer servers, send an event via redis
+		if err := client.StorageDriver.Touch(item); err != nil {
+			return err
+		}
 		slog.Debug("Item already exists locally", "item", item)
 		return nil
 	}

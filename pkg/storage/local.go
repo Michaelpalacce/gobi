@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/Michaelpalacce/gobi/pkg/digest"
 	"github.com/Michaelpalacce/gobi/pkg/models"
@@ -116,6 +117,14 @@ func (d *LocalDriver) GetReader(i models.Item) (io.ReadCloser, error) {
 	}
 
 	return file, nil
+}
+
+// Touch will update the mtime of the given item to the server mtime
+func (d *LocalDriver) Touch(i models.Item) error {
+	// int64 to time.Time
+	t := time.Unix(i.ServerMTime, 0)
+
+	return os.Chtimes(d.getFilePath(i), t, t)
 }
 
 // GetWriter should be used to get a writer for the given item, when you want to save it

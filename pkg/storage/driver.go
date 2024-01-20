@@ -32,6 +32,8 @@ type Driver interface {
 
 	Exists(i models.Item) bool
 
+	Touch(i models.Item) error
+
 	CalculateSHA256(i models.Item) string
 
 	WatchVault(vaultName string, changeChan chan<- *models.Item) error
