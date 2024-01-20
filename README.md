@@ -7,18 +7,18 @@ Go Bi-Directional Sync With API
 - [x] Database
 - [x] Project design and structure
 - [x] Basic Authentication
-- [ ] Storage Driver Interface
-- [ ] Docker Compose For Mongo And Redis
-- [ ] Local Storage Driver
+- [x] Storage Driver Interface
+- [x] Local Storage Driver
 - [x] File Uploading
 - [x] File Pushing
+- [x] Conflict resolution
+- [x] Better server interrupts handling ( send data first and then stop )
+- [ ] Docker Compose For Mongo And Redis
 - [ ] Encryption at rest
 - [ ] Multiple Targets
 - [ ] Bi-Directional Syncing
 - [ ] Versioning
 - [ ] Deletion resolution
-- [ ] Conflict resolution
-- [ ] Better server interrupts handling ( send data first and then stop )
 
 ## Principles
 
