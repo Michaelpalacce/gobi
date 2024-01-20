@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"time"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/database"
@@ -100,6 +101,9 @@ func (c *WebsocketClient) SendItem(item models.Item) error {
 // FetchItem will receive an item from the client/server
 // @NOTE: You must tell the client/server to start sending the file first
 func (c *WebsocketClient) FetchItem(item models.Item) error {
+	c.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	defer c.Conn.SetReadDeadline(time.Time{})
+
 	slog.Debug("Fetching file", "item", item)
 
 	writer, err := c.StorageDriver.GetWriter(item)

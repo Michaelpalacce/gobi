@@ -147,9 +147,6 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 		err             error
 	)
 
-	client.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-	defer client.Conn.SetReadDeadline(time.Time{})
-
 	if err = json.Unmarshal(websocketMessage.Payload, &itemSavePayload); err != nil {
 		return err
 	}

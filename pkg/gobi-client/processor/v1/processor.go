@@ -130,9 +130,6 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 func processInitialSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var initialSyncPayload v1.InitialSyncPayload
 
-	client.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-	defer client.Conn.SetReadDeadline(time.Time{})
-
 	if err := json.Unmarshal(websocketMessage.Payload, &initialSyncPayload); err != nil {
 		return err
 	}
