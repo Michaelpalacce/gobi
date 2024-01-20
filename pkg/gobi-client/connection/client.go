@@ -15,11 +15,13 @@ import (
 // ClientConnection handles the initial processing of the websocket messages and sends it off to the WebsocketClient to take care of them
 type ClientConnection struct {
 	WebsocketClient *socket.WebsocketClient
+	V1Processor     *processor_v1.Processor
 }
 
 // Listen will request information from the client and then listen for data.
 func (c *ClientConnection) Listen(closeChan chan<- error) {
 	c.WebsocketClient.InitialSync = true
+	c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
 
 	initChan := make(chan error, 1)
 	readMessageChan := make(chan error, 1)
@@ -50,6 +52,11 @@ func (c *ClientConnection) init(initChan chan<- error) {
 	}
 
 	if err := c.WebsocketClient.SendMessage(v1.NewVaultNameMessage(c.WebsocketClient.Client.VaultName)); err != nil {
+		initChan <- err
+		return
+	}
+
+	if err := c.WebsocketClient.SendMessage(v1.NewSyncStrategyMessage(c.WebsocketClient.Client.SyncStrategy)); err != nil {
 		initChan <- err
 		return
 	}
@@ -131,7 +138,7 @@ func (c *ClientConnection) processTextMessage(message []byte) error {
 			return err
 		}
 	case 1:
-		if err := processor_v1.ProcessClientTextMessage(websocketMessage, c.WebsocketClient); err != nil {
+		if err := c.V1Processor.ProcessClientTextMessage(websocketMessage); err != nil {
 			return err
 		}
 	default:
@@ -153,7 +160,7 @@ func (c *ClientConnection) processV0(websocketMessage messages.WebsocketMessage)
 // processBinaryMessage will process different types of binary messages
 // When processing the binary message we need to know where to store it
 func (c *ClientConnection) processBinaryMessage(message []byte) error {
-	if err := processor_v1.ProcessClientBinaryMessage(message, c.WebsocketClient); err != nil {
+	if err := c.V1Processor.ProcessClientBinaryMessage(message); err != nil {
 		return err
 	}
 

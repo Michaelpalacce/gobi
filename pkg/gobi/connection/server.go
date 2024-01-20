@@ -13,18 +13,19 @@ import (
 
 // ServerConnection represents a connected WebSocket client
 type ServerConnection struct {
-	Client *socket.WebsocketClient
-	// Add any other fields you need for tracking the client
+	WebsocketClient *socket.WebsocketClient
+	V1Processor     *processor_v1.Processor
 }
 
 // Listen will request information from the client and then listen for data.
 func (c *ServerConnection) Listen(closeChan chan<- error) {
+	c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
 	closeChan <- c.readMessage()
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
 func (c *ServerConnection) Close(msg string) {
-	c.Client.Close(msg)
+	c.WebsocketClient.Close(msg)
 }
 
 // readMessage will continuously wait for incomming messages and process them for the given client
@@ -33,7 +34,7 @@ func (c *ServerConnection) Close(msg string) {
 func (c *ServerConnection) readMessage() (closeError error) {
 out:
 	for {
-		messageType, message, err := c.Client.Conn.ReadMessage()
+		messageType, message, err := c.WebsocketClient.Conn.ReadMessage()
 		slog.Debug("Received message from client", "message", string(message), "messageType", messageType)
 
 		if err != nil {
@@ -88,7 +89,7 @@ func (c *ServerConnection) processTextMessage(message []byte) error {
 			return err
 		}
 	case 1:
-		if err := processor_v1.ProcessServerTextMessage(websocketMessage, c.Client); err != nil {
+		if err := c.V1Processor.ProcessServerTextMessage(websocketMessage); err != nil {
 			return err
 		}
 	default:
@@ -108,7 +109,7 @@ func (c *ServerConnection) processV0(websocketMessage messages.WebsocketMessage)
 		if err := json.Unmarshal(websocketMessage.Payload, &versionResponsePayload); err != nil {
 			return err
 		} else {
-			c.Client.Client.Version = versionResponsePayload.Version
+			c.WebsocketClient.Client.Version = versionResponsePayload.Version
 		}
 	default:
 		return fmt.Errorf("unknown websocket message type: %s for version 0", websocketMessage.Type)
@@ -127,7 +128,7 @@ func (c *ServerConnection) processBinaryMessage(message []byte) error {
 
 	switch websocketMessage.Version {
 	case 1:
-		if err := processor_v1.ProcessServerBinaryMessage(websocketMessage, c.Client); err != nil {
+		if err := c.V1Processor.ProcessServerBinaryMessage(websocketMessage); err != nil {
 			return err
 		}
 	default:
@@ -139,7 +140,7 @@ func (c *ServerConnection) processBinaryMessage(message []byte) error {
 
 // processPingMessage will send a PongMessage and nothing else
 func (c *ServerConnection) processPingMessage(message []byte) error {
-	if err := c.Client.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
+	if err := c.WebsocketClient.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
 		return fmt.Errorf("error sending message: %w", err)
 	}
 

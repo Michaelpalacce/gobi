@@ -213,7 +213,7 @@ func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
 }
 
 // WatchVault will watch the given vault for changes and add them to the queue
-// @TODO: Deletions
+// @TODO: Deletions. Send a message to the server that the file was deleted
 func (d *LocalDriver) WatchVault(vaultName string, changeChan chan<- *models.Item) error {
 	// Create new watcher.
 	watcher, err := fsnotify.NewWatcher()

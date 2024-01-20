@@ -17,6 +17,7 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/logger"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
+	syncstrategies "github.com/Michaelpalacce/gobi/pkg/syncStrategies"
 	"github.com/gorilla/websocket"
 )
 
@@ -43,7 +44,7 @@ func main() {
 	flag.Parse()
 
 	// Check if both username and password are provided
-	// TODO: Make me better
+	// TODO: Make me better... maybe a struct? or a map? or something else? I don't know yet :( I'm just a simple if statement
 	if username == "" || password == "" || host == "" || vaultName == "" || vaultPath == "" {
 		flag.Usage()
 		os.Exit(1)
@@ -78,8 +79,9 @@ out:
 					// Intentionally hardcoded to latest.
 					Version:   1,
 					VaultName: vaultName,
-					// TODO: Fetch me from somewhere... sqlite???
-					LastSync: 0,
+					// TODO: Fetch me from somewhere... maybe a file? maybe a database? maybe a configmap? maybe a secret? maybe a flag? maybe an env var? maybe a combination of all of them?
+					LastSync:     0,
+					SyncStrategy: syncstrategies.LastModifiedTimeStrategy,
 					// LastSync: 1701027954,
 				},
 				Conn:          conn,

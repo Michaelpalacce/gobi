@@ -37,7 +37,7 @@ func NewWebsocketService(db *database.Database) WebsocketService {
 // At the end, the client will be unregistered and the connection will be closed with
 // an Error message if one was present
 func (s *WebsocketService) HandleConnection(conn *websocket.Conn, user models.User) {
-	client := &connection.ServerConnection{Client: &socket.WebsocketClient{
+	client := &connection.ServerConnection{WebsocketClient: &socket.WebsocketClient{
 		DB:   s.DB,
 		Conn: conn,
 		StorageDriver: storage.NewLocalDriver(

@@ -21,6 +21,20 @@ func NewVaultNameMessage(vaultName string) messages.WebsocketRequest {
 	}
 }
 
+type SyncStrategyPayload struct {
+	SyncStrategy int `json:"syncStrategy"`
+}
+
+func NewSyncStrategyMessage(syncStrategy int) messages.WebsocketRequest {
+	return messages.WebsocketRequest{
+		Type: SyncStrategyType,
+		Payload: SyncStrategyPayload{
+			SyncStrategy: syncStrategy,
+		},
+		Version: 1,
+	}
+}
+
 // ------------------------------ Sync ------------------------------
 
 type SyncPayload struct {

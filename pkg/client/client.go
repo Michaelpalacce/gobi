@@ -6,11 +6,10 @@ import "github.com/Michaelpalacce/gobi/pkg/models"
 // Used by the server and client
 type Client struct {
 	// General
-	VaultName string
-	Version   int
-
-	// Client Exclusive
-	LastSync int
+	VaultName    string
+	Version      int
+	LastSync     int
+	SyncStrategy int
 
 	// Server Exclusive
 	User models.User
