@@ -10,8 +10,8 @@ Go Bi-Directional Sync With API
 - [ ] Storage Driver Interface
 - [ ] Docker Compose For Mongo And Redis
 - [ ] Local Storage Driver
-- [ ] File Uploading
-- [ ] File Pushing
+- [x] File Uploading
+- [x] File Pushing
 - [ ] Encryption at rest
 - [ ] Multiple Targets
 - [ ] Bi-Directional Syncing

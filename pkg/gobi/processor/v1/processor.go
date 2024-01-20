@@ -197,6 +197,7 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 	if item.SHA256 == client.StorageDriver.CalculateSHA256(item) {
 		// @TODO: Touch the file, update the mtime
 		// Do the same for the client
+		// Other clients should see the change and update their mtime
 		slog.Debug("Item already exists locally", "item", item)
 		return nil
 	}
