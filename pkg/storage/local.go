@@ -14,6 +14,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// @TODO: IMPORTANT! Make sure we don't allow any paths that are outside of the vaults path and that we don't allow any paths that are not in the vault path
+
 type LocalDriver struct {
 	VaultsPath string
 	queue      []models.Item
