@@ -36,3 +36,8 @@ type Driver interface {
 
 	WatchVault(vaultName string, changeChan chan<- *models.Item) error
 }
+
+const (
+	ConflictModeNo  bool = false
+	ConflictModeYes bool = true
+)

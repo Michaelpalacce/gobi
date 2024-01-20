@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
@@ -35,7 +36,7 @@ func (s *DefaultSyncStrategy) SendSingle(client *socket.WebsocketClient, item mo
 
 // Fetch will download all non-conflicting items
 func (s DefaultSyncStrategy) Fetch(client *socket.WebsocketClient) error {
-	if err := s.FetchMultiple(client, s.driver.GetAllItems(false), false); err != nil {
+	if err := s.FetchMultiple(client, s.driver.GetAllItems(storage.ConflictModeNo), storage.ConflictModeNo); err != nil {
 		return err
 	}
 
@@ -44,7 +45,7 @@ func (s DefaultSyncStrategy) Fetch(client *socket.WebsocketClient) error {
 
 // FetchConflicts will download all conflicting items
 func (s *DefaultSyncStrategy) FetchConflicts(client *socket.WebsocketClient) error {
-	if err := s.FetchMultiple(client, s.driver.GetAllItems(true), true); err != nil {
+	if err := s.FetchMultiple(client, s.driver.GetAllItems(storage.ConflictModeYes), storage.ConflictModeYes); err != nil {
 		return err
 	}
 
@@ -74,6 +75,7 @@ func (s *DefaultSyncStrategy) FetchSingle(client *socket.WebsocketClient, item m
 		}
 	}
 
+	client.SendMessage(v1.NewItemFetchMessage(item))
 	if err := client.FetchItem(item); err != nil {
 		return err
 	}

@@ -9,7 +9,8 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
-	"github.com/gorilla/websocket"
+	"github.com/Michaelpalacce/gobi/pkg/storage"
+	v1_syncstrategies "github.com/Michaelpalacce/gobi/pkg/syncStrategies/v1"
 )
 
 // ProcessServerBinaryMessage will decide how to process the binary message.
@@ -84,51 +85,10 @@ func processInitialSyncMessage(websocketMessage messages.WebsocketMessage, clien
 	}
 
 	client.StorageDriver.Enqueue(initialSyncPayload.Items)
-	// @TODO: Check me
-	for client.StorageDriver.HasItemsToProcess(false) {
-		item := client.StorageDriver.GetNext(false)
-		slog.Debug("Fetching file from client", "item", item)
 
-		client.SendMessage(v1.NewItemFetchMessage(*item))
-
-		writer, err := client.StorageDriver.GetWriter(*item)
-		if err != nil {
-			return err
-		}
-
-		defer func() {
-			writer.Close()
-		}()
-
-		if item.Size == 0 {
-			slog.Debug("File Fetched Successfully", "item", item)
-			continue
-		}
-
-		bytesRead := 0
-		for {
-			messageType, message, err := client.Conn.ReadMessage()
-			if err != nil {
-				return err
-			}
-
-			if messageType != websocket.BinaryMessage {
-				return fmt.Errorf("invalid messageType received: %d, expected 2 (BinaryMessage)", messageType)
-			}
-
-			writer.Write(message)
-
-			bytesRead += len(message)
-			if bytesRead == item.Size {
-				writer.Close()
-				break
-			}
-
-			if bytesRead > item.Size {
-				return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
-			}
-		}
-		slog.Debug("File Fetched Successfully", "item", item)
+	syncStrategy := getSyncStrategy(client)
+	if err := syncStrategy.FetchMultiple(client, client.StorageDriver.GetAllItems(storage.ConflictModeNo), storage.ConflictModeNo); err != nil {
+		return err
 	}
 
 	client.SendMessage(v1.NewInitialSyncDoneMessage(client.Client.LastSync))
@@ -171,7 +131,7 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 			return err
 		}
 
-		items := client.StorageDriver.GetAllItems(false)
+		items := client.StorageDriver.GetAllItems(storage.ConflictModeNo)
 
 		slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
 
@@ -203,48 +163,10 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 		return nil
 	}
 
-	slog.Debug("Fetching file from client", "item", item)
-
-	client.SendMessage(v1.NewItemFetchMessage(item))
-
-	writer, err := client.StorageDriver.GetWriter(item)
-	if err != nil {
+	syncStrategy := getSyncStrategy(client)
+	if err := syncStrategy.FetchSingle(client, item, storage.ConflictModeYes); err != nil {
 		return err
 	}
-
-	defer func() {
-		writer.Close()
-	}()
-
-	if item.Size == 0 {
-		slog.Debug("File is empty", "item", item)
-		return nil
-	}
-
-	bytesRead := 0
-	for {
-		messageType, message, err := client.Conn.ReadMessage()
-		if err != nil {
-			return err
-		}
-
-		if messageType != websocket.BinaryMessage {
-			return fmt.Errorf("invalid messageType received: %d, expected 2 (BinaryMessage)", messageType)
-		}
-
-		writer.Write(message)
-
-		bytesRead += len(message)
-		if bytesRead == item.Size {
-			writer.Close()
-			break
-		}
-
-		if bytesRead > item.Size {
-			return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
-		}
-	}
-	slog.Debug("File Fetched Successfully", "item", item)
 
 	return nil
 }
@@ -257,9 +179,16 @@ func processItemFetchMessage(websocketMessage messages.WebsocketMessage, client 
 		return err
 	}
 
-	if err := client.SendItem(itemFetchPayload.Item); err != nil {
+	syncStrategy := getSyncStrategy(client)
+
+	if err := syncStrategy.SendSingle(client, itemFetchPayload.Item); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// @TODO: This should be configurable, but for now, this is the only sync strategy
+func getSyncStrategy(client *socket.WebsocketClient) v1_syncstrategies.SyncStrategy {
+	return v1_syncstrategies.NewDefaultSyncStrategy(client.StorageDriver)
 }

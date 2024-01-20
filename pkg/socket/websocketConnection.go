@@ -8,7 +8,6 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
-	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/gorilla/websocket"
@@ -99,9 +98,9 @@ func (c *WebsocketClient) SendItem(item models.Item) error {
 }
 
 // FetchItem will receive an item from the client/server
+// @NOTE: You must tell the client/server to start sending the file first
 func (c *WebsocketClient) FetchItem(item models.Item) error {
 	slog.Debug("Fetching file", "item", item)
-	c.SendMessage(v1.NewItemFetchMessage(item))
 
 	writer, err := c.StorageDriver.GetWriter(item)
 	if err != nil {

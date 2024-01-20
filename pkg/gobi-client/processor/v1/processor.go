@@ -6,11 +6,12 @@ import (
 	"log/slog"
 	"time"
 
-	v1_syncstrategies "github.com/Michaelpalacce/gobi/pkg/gobi-client/syncStrategies/v1"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
+	"github.com/Michaelpalacce/gobi/pkg/storage"
+	v1_syncstrategies "github.com/Michaelpalacce/gobi/pkg/syncStrategies/v1"
 )
 
 // ProcessClientTextMessage will decide how to process the text message.
@@ -111,7 +112,7 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 			return err
 		}
 
-		items := client.StorageDriver.GetAllItems(false)
+		items := client.StorageDriver.GetAllItems(storage.ConflictModeNo)
 
 		slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
 
