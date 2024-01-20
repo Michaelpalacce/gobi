@@ -157,7 +157,7 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 		if err := client.StorageDriver.Touch(item); err != nil {
 			return err
 		}
-		slog.Debug("Item already exists locally", "item", item)
+		slog.Info("Item already exists locally", "item", item)
 		return nil
 	}
 

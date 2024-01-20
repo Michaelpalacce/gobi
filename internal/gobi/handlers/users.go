@@ -28,12 +28,12 @@ func (h UsersHandler) CreateUser(c *gin.Context) {
 	user := &models.User{}
 
 	if err := c.ShouldBindJSON(user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to bind user: %s", err).Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to bind user: %w", err).Error()})
 		return
 	}
 
 	if err := h.Service.CreateUser(user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to create user: %s", err).Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to create user: %w", err).Error()})
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h UsersHandler) DeleteUser(c *gin.Context) {
 	}
 
 	if err := h.Service.DeleteUser(userObject.ID.Hex()); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to delete user: %s", err).Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error while trying to delete user: %w", err).Error()})
 		return
 	}
 

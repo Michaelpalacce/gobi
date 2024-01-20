@@ -36,27 +36,19 @@ func (s *DefaultSyncStrategy) SendSingle(client *socket.WebsocketClient, item mo
 
 // Fetch will download all non-conflicting items
 func (s DefaultSyncStrategy) Fetch(client *socket.WebsocketClient) error {
-	if err := s.FetchMultiple(client, s.driver.GetAllItems(storage.ConflictModeNo), storage.ConflictModeNo); err != nil {
-		return err
-	}
-
-	return nil
+	return s.FetchMultiple(client, s.driver.GetAllItems(storage.ConflictModeNo), storage.ConflictModeNo)
 }
 
 // FetchConflicts will download all conflicting items
 func (s *DefaultSyncStrategy) FetchConflicts(client *socket.WebsocketClient) error {
-	if err := s.FetchMultiple(client, s.driver.GetAllItems(storage.ConflictModeYes), storage.ConflictModeYes); err != nil {
-		return err
-	}
-
-	return nil
+	return s.FetchMultiple(client, s.driver.GetAllItems(storage.ConflictModeYes), storage.ConflictModeYes)
 }
 
 // FetchMultiple will resolve multiple items, either by downloading all non-conflicting items, or all conflicting items
 func (s *DefaultSyncStrategy) FetchMultiple(client *socket.WebsocketClient, items []models.Item, conflictMode bool) error {
 	for _, item := range items {
 		if err := s.FetchSingle(client, item, conflictMode); err != nil {
-			return fmt.Errorf("error downloading file: %s", err)
+			return fmt.Errorf("error downloading file: %w", err)
 		}
 	}
 
@@ -68,17 +60,12 @@ func (s *DefaultSyncStrategy) FetchMultiple(client *socket.WebsocketClient, item
 func (s *DefaultSyncStrategy) FetchSingle(client *socket.WebsocketClient, item models.Item, conflictMode bool) error {
 	slog.Debug("Fetching item from server", "item", item)
 
-	if conflictMode {
-		if item.ServerMTime < client.StorageDriver.GetMTime(item) {
-			slog.Debug("Skipping conflict", "item", item)
-			return nil
-		}
+	if conflictMode && item.ServerMTime < client.StorageDriver.GetMTime(item) {
+		slog.Debug("Skipping conflict", "item", item)
+		return nil
 	}
 
 	client.SendMessage(v1.NewItemFetchMessage(item))
-	if err := client.FetchItem(item); err != nil {
-		return err
-	}
 
-	return nil
+	return client.FetchItem(item)
 }

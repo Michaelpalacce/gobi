@@ -22,9 +22,8 @@ type WebsocketRequest struct {
 // Marshal will return the response as a string
 func (r WebsocketRequest) Marshal() []byte {
 	data, err := json.Marshal(r)
-
 	if err != nil {
-		return []byte(fmt.Errorf("could not marshal body: %s", err).Error())
+		return []byte(fmt.Errorf("could not marshal body: %w", err).Error())
 	}
 
 	return data

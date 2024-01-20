@@ -115,7 +115,7 @@ func (d *LocalDriver) GetAllItems(conflictMode bool) []models.Item {
 func (d *LocalDriver) GetReader(i models.Item) (io.ReadCloser, error) {
 	file, err := os.Open(d.getFilePath(i))
 	if err != nil {
-		return nil, fmt.Errorf("error opening file: %s", err)
+		return nil, fmt.Errorf("error opening file: %w", err)
 	}
 
 	return file, nil
@@ -135,18 +135,18 @@ func (d *LocalDriver) GetWriter(i models.Item) (io.WriteCloser, error) {
 	dirPath := filepath.Dir(path)
 	absPath, err := filepath.Abs(dirPath)
 	if err != nil {
-		return nil, fmt.Errorf("error getting absolute path: %s", err)
+		return nil, fmt.Errorf("error getting absolute path: %w", err)
 	}
 
 	// Use os.MkdirAll to create the directory and its parents
 	err = os.MkdirAll(absPath, os.ModePerm)
 	if err != nil {
-		return nil, fmt.Errorf("error creating directory: %s", err)
+		return nil, fmt.Errorf("error creating directory: %w", err)
 	}
 
 	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
-		return nil, fmt.Errorf("error opening file: %s", err)
+		return nil, fmt.Errorf("error opening file: %w", err)
 	}
 
 	return file, nil

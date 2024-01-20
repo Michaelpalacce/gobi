@@ -50,7 +50,7 @@ func (u UsersService) CreateUser(user *models.User) error {
 
 	insertResult, err := userCollection.InsertOne(ctx, user)
 	if err != nil {
-		return fmt.Errorf("error while inserting record: %s, error was %s", user.Username, err)
+		return fmt.Errorf("error while inserting record: %s, error was %w", user.Username, err)
 	}
 
 	id, ok := insertResult.InsertedID.(primitive.ObjectID)

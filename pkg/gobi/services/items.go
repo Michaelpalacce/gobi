@@ -40,7 +40,7 @@ func (s *ItemsService) Upsert(item *models.Item, ownerId primitive.ObjectID) err
 	doesNotExist := result.Err() == mongo.ErrNoDocuments
 
 	if result.Err() != nil && !doesNotExist {
-		return fmt.Errorf("error retrieving item: %v, error was %v", item, result.Err())
+		return fmt.Errorf("error retrieving item: %v, error was %w", item, result.Err())
 	}
 
 	item.ServerMTime = time.Now().Unix()

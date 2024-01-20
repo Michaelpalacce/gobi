@@ -44,7 +44,7 @@ func (h *WebsocketHandler) Establish(c *gin.Context) {
 
 	conn, err := h.upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error trying to upgrade connection to websocket: %s", err).Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Errorf("error trying to upgrade connection to websocket: %w", err).Error()})
 		return
 	}
 

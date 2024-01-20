@@ -44,7 +44,7 @@ out:
 			}
 
 			// Handle other errors
-			closeError = fmt.Errorf("error reading message: %s", err)
+			closeError = fmt.Errorf("error reading message: %w", err)
 			break out
 		}
 
@@ -79,7 +79,7 @@ func (c *ServerConnection) processTextMessage(message []byte) error {
 	var websocketMessage messages.WebsocketMessage
 
 	if err := json.Unmarshal(message, &websocketMessage); err != nil {
-		return fmt.Errorf("error while unmarshaling websocket message %s", err)
+		return fmt.Errorf("error while unmarshaling websocket message %w", err)
 	}
 
 	switch websocketMessage.Version {
@@ -122,7 +122,7 @@ func (c *ServerConnection) processBinaryMessage(message []byte) error {
 	var websocketMessage messages.WebsocketMessage
 
 	if err := json.Unmarshal(message, &websocketMessage); err != nil {
-		return fmt.Errorf("error while unmarshaling websocket response %s", err)
+		return fmt.Errorf("error while unmarshaling websocket response %w", err)
 	}
 
 	switch websocketMessage.Version {
@@ -140,7 +140,7 @@ func (c *ServerConnection) processBinaryMessage(message []byte) error {
 // processPingMessage will send a PongMessage and nothing else
 func (c *ServerConnection) processPingMessage(message []byte) error {
 	if err := c.Client.Conn.WriteMessage(websocket.PongMessage, []byte("")); err != nil {
-		return fmt.Errorf("error sending message: %s", err)
+		return fmt.Errorf("error sending message: %w", err)
 	}
 
 	return nil

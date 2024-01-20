@@ -3,14 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
 	"time"
-
-	"io"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/gobi-client/auth"
@@ -119,12 +118,12 @@ func establishConn(options connection.Options) (*websocket.Conn, error) {
 			// Read and print the body content
 			body, err := io.ReadAll(io.Reader(resp.Body))
 			if err != nil {
-				return nil, fmt.Errorf("error connecting to WebSocket: %s", websocketErr)
+				return nil, fmt.Errorf("error connecting to WebSocket: %w", websocketErr)
 			}
-			return nil, fmt.Errorf("error connecting to WebSocket: %s, response was %s", websocketErr, body)
+			return nil, fmt.Errorf("error connecting to WebSocket: %w, response was %s", websocketErr, body)
 		}
 
-		return nil, fmt.Errorf("error connecting to WebSocket: %s", websocketErr)
+		return nil, fmt.Errorf("error connecting to WebSocket: %w", websocketErr)
 	}
 
 	return conn, nil

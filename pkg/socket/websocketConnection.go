@@ -59,7 +59,7 @@ func (c *WebsocketClient) SendMessage(message messages.WebsocketRequest) error {
 	slog.Debug("Sending message", "message", string(messageBytes))
 	err := c.Conn.WriteMessage(websocket.TextMessage, messageBytes)
 	if err != nil {
-		return fmt.Errorf("error sending message: %s", err)
+		return fmt.Errorf("error sending message: %w", err)
 	}
 
 	return nil
@@ -84,12 +84,12 @@ func (c *WebsocketClient) SendItem(item models.Item) error {
 		}
 
 		if err != nil {
-			return fmt.Errorf("error reading: %s", err)
+			return fmt.Errorf("error reading: %w", err)
 		}
 
 		err = c.Conn.WriteMessage(websocket.BinaryMessage, buffer[:n])
 		if err != nil {
-			return fmt.Errorf("error reading file chunk: %s", err)
+			return fmt.Errorf("error reading file chunk: %w", err)
 		}
 	}
 
