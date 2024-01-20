@@ -45,7 +45,7 @@ func (s *ItemsService) Upsert(item *models.Item, ownerId primitive.ObjectID) err
 
 	item.ServerMTime = time.Now().Unix()
 	item.OwnerId = ownerId.Hex()
-	item.ID = primitive.NewObjectID()
+	// item.ID = primitive.NewObjectID()
 
 	slog.Debug("Upserting item", "item", item)
 
@@ -56,7 +56,7 @@ func (s *ItemsService) Upsert(item *models.Item, ownerId primitive.ObjectID) err
 		}
 
 		objectId := resultRaw.Lookup("_id").ObjectID()
-		item.ID = objectId
+		// item.ID = objectId
 
 		return s.Update(objectId, item)
 	}

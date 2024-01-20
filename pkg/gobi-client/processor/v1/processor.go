@@ -114,7 +114,7 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 
 		items := client.StorageDriver.GetAllItems(storage.ConflictModeNo)
 
-		slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
+		slog.Debug("Items found for sync since last reconcillation", "items", len(items), "lastSync", syncPayload.LastSync)
 
 		client.SendMessage(v1.NewInitialSyncMessage(items))
 	}

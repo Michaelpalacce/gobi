@@ -1,9 +1,7 @@
 package models
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
-
 type Item struct {
-	ID primitive.ObjectID `json:"_id" form:"id" bson:"_id"`
+	// ID primitive.ObjectID `json:"_id" form:"id" bson:"_id"`
 	// OwnerId is the ObjectID of the owner user
 	OwnerId string `json:"owner_id" form:"owner_id" binding:"required" bson:"owner_id"`
 	// VaultName contains the owner's vault name that this file is located in

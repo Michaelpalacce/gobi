@@ -210,7 +210,6 @@ func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
 		d.queue = append(d.queue, item)
 		return nil
 	})
-	slog.Debug("EnqueueItemsSince", "queue", d.queue)
 }
 
 // WatchVault will watch the given vault for changes and add them to the queue
@@ -250,7 +249,7 @@ func (d *LocalDriver) WatchVault(vaultName string, changeChan chan<- *models.Ite
 					}
 
 					item.SHA256 = d.CalculateSHA256(item)
-					slog.Debug("Sending item to changeChan", "item", item)
+					slog.Debug("File changed", "item", item)
 					changeChan <- &item
 					// d.Enqueue([]models.Item{item})
 				}

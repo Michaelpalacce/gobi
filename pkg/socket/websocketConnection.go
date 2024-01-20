@@ -93,7 +93,7 @@ func (c *WebsocketClient) SendItem(item models.Item) error {
 		}
 	}
 
-	slog.Debug("File Sent Successfully", "item", item)
+	slog.Info("File Sent Successfully", "item", item.ServerPath, "vault", item.VaultName)
 
 	return nil
 }
@@ -116,7 +116,7 @@ func (c *WebsocketClient) FetchItem(item models.Item) error {
 	}()
 
 	if item.Size == 0 {
-		slog.Debug("File Fetched Successfully", "item", item)
+		slog.Info("File Fetched Successfully", "item", item)
 		return nil
 	}
 
@@ -143,7 +143,8 @@ func (c *WebsocketClient) FetchItem(item models.Item) error {
 			return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
 		}
 	}
-	slog.Debug("File Fetched Successfully", "item", item)
+
+	slog.Info("File Fetched Successfully", "Item", item.ServerPath, "vault", item.VaultName)
 
 	return nil
 }
