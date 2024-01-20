@@ -43,7 +43,7 @@ func (s *ItemsService) Upsert(item *models.Item, ownerId primitive.ObjectID) err
 		return fmt.Errorf("error retrieving item: %v, error was %v", item, result.Err())
 	}
 
-	item.ServerMTime = int(time.Now().Unix())
+	item.ServerMTime = time.Now().Unix()
 	item.OwnerId = ownerId.Hex()
 	item.ID = primitive.NewObjectID()
 

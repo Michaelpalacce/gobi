@@ -3,6 +3,7 @@ package storage
 import (
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -10,17 +11,20 @@ import (
 
 	"github.com/Michaelpalacce/gobi/pkg/digest"
 	"github.com/Michaelpalacce/gobi/pkg/models"
+	"github.com/fsnotify/fsnotify"
 )
 
 type LocalDriver struct {
 	VaultsPath string
 	queue      []models.Item
+	conflicts  []models.Item
 }
 
 func NewLocalDriver(vaultsPath string) *LocalDriver {
 	return &LocalDriver{
 		VaultsPath: vaultsPath,
 		queue:      make([]models.Item, 0),
+		conflicts:  make([]models.Item, 0),
 	}
 }
 
@@ -29,16 +33,36 @@ func NewLocalDriver(vaultsPath string) *LocalDriver {
 func (d *LocalDriver) Enqueue(items []models.Item) {
 	for _, item := range items {
 		if ok := d.checkIfLocalMatch(item); !ok {
+			fileInfo, err := os.Stat(d.getFilePath(item))
+			if err == nil && fileInfo.ModTime().Unix() > item.ServerMTime {
+				slog.Debug("Enqueueing conflict", "item", item)
+				d.conflicts = append(d.conflicts, item)
+				continue
+			}
+
 			d.queue = append(d.queue, item)
 		}
 	}
+}
+
+func (d *LocalDriver) GetMTime(i models.Item) int64 {
+	fileInfo, err := os.Stat(d.getFilePath(i))
+	if err != nil {
+		return 0
+	}
+
+	return fileInfo.ModTime().Unix()
+}
+
+func (d *LocalDriver) EnqueueConflcits() {
+	d.queue = append(d.queue, d.conflicts...)
+	d.conflicts = make([]models.Item, 0)
 }
 
 // GetNext will return the next File in the queue
 func (d *LocalDriver) GetNext() *models.Item {
 	if len(d.queue) > 0 {
 		var current models.Item
-		slog.Debug("Queue", "queue", d.queue)
 		current, d.queue = d.queue[0], d.queue[1:]
 		return &current
 	}
@@ -100,7 +124,7 @@ func (d *LocalDriver) GetWriter(i models.Item) (io.WriteCloser, error) {
 		return nil, fmt.Errorf("error creating directory: %s", err)
 	}
 
-	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, 0o666)
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
 	if err != nil {
 		return nil, fmt.Errorf("error opening file: %s", err)
 	}
@@ -122,6 +146,7 @@ func (d *LocalDriver) getFilePath(i models.Item) string {
 func (d *LocalDriver) CalculateSHA256(i models.Item) string {
 	digest, err := digest.FileSHA256(d.getFilePath(i))
 	if err != nil {
+		slog.Error("Error calculating SHA256", "error", err)
 		return ""
 	}
 
@@ -154,9 +179,10 @@ func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
 		}
 
 		item := models.Item{
-			VaultName:  vaultName,
-			ServerPath: strings.Replace(path, vaultPath+"/", "", 1),
-			Size:       int(fileInfo.Size()),
+			VaultName:   vaultName,
+			ServerPath:  strings.Replace(path, vaultPath+"/", "", 1),
+			Size:        int(fileInfo.Size()),
+			ServerMTime: fileInfo.ModTime().Unix(),
 		}
 
 		item.SHA256 = d.CalculateSHA256(item)
@@ -165,4 +191,67 @@ func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
 		return nil
 	})
 	slog.Debug("EnqueueItemsSince", "queue", d.queue)
+}
+
+// WatchVault will watch the given vault for changes and add them to the queue
+// @TODO: Deletions
+func (d *LocalDriver) WatchVault(vaultName string, changeChan chan<- *models.Item) error {
+	// Create new watcher.
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
+
+	// Start listening for events.
+	go func() {
+		for {
+			select {
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+
+				if event.Has(fsnotify.Write) {
+
+					if err != nil {
+						return
+					}
+
+					fileInfo, err := os.Stat(event.Name)
+					if err != nil {
+						return
+					}
+
+					item := models.Item{
+						VaultName:  vaultName,
+						ServerPath: strings.Replace(event.Name, filepath.Join(d.VaultsPath, vaultName), "", 1),
+						Size:       int(fileInfo.Size()),
+					}
+
+					item.SHA256 = d.CalculateSHA256(item)
+					log.Println("modified file:", event.Name)
+					changeChan <- &item
+					// d.Enqueue([]models.Item{item})
+				}
+
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Println("error:", err)
+			}
+		}
+	}()
+
+	// Add a path.
+	path := filepath.Join(d.VaultsPath, vaultName)
+	slog.Debug("Watching path", "path", path)
+	err = watcher.Add(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// Block main goroutine forever.
+	<-make(chan struct{})
+	return nil
 }

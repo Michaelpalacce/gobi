@@ -8,6 +8,7 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
+	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/gorilla/websocket"
 )
@@ -21,6 +22,7 @@ type WebsocketClient struct {
 	StorageDriver storage.Driver
 	Client        client.Client
 	closed        bool
+	InitialSync   bool
 
 	// Server Exclusive
 	DB *database.Database
@@ -40,6 +42,11 @@ func (c *WebsocketClient) Close(msg string) {
 
 	// Close the WebSocket connection gracefully
 	_ = c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, string(payload.Marshal())))
+}
+
+func (c *WebsocketClient) WatchVault(changeChan chan<- *models.Item) error {
+	c.StorageDriver.WatchVault(c.Client.VaultName, changeChan)
+	return nil
 }
 
 // sendMessage enforces a uniform style in sending data

@@ -32,6 +32,14 @@ func ProcessServerTextMessage(websocketMessage messages.WebsocketMessage, client
 		if err := processSyncMessage(websocketMessage, client); err != nil {
 			return err
 		}
+	case v1.InitialSyncType:
+		if err := processInitialSyncMessage(websocketMessage, client); err != nil {
+			return err
+		}
+	case v1.InitialSyncDoneType:
+		if err := processInitialSyncDoneMessage(websocketMessage, client); err != nil {
+			return err
+		}
 	case v1.ItemFetchType:
 		if err := processItemFetchMessage(websocketMessage, client); err != nil {
 			return err
@@ -60,6 +68,104 @@ func processVaultNameMessage(websocketMessage messages.WebsocketMessage, client 
 	return nil
 }
 
+// processInitialSyncMessage adds items to the queue
+// Check if sha256 matches locally
+// Request File if it does not.
+// If a file is not sent back in 30 seconds, close the connection
+// This is done only once, after the initial sync, the client will watch the vault for changes
+func processInitialSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
+	var initialSyncPayload v1.InitialSyncPayload
+
+	client.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	defer client.Conn.SetReadDeadline(time.Time{})
+
+	if err := json.Unmarshal(websocketMessage.Payload, &initialSyncPayload); err != nil {
+		return err
+	}
+
+	client.StorageDriver.Enqueue(initialSyncPayload.Items)
+	for client.StorageDriver.HasItemsToProcess() {
+		item := client.StorageDriver.GetNext()
+		slog.Debug("Fetching file from client", "item", item)
+
+		client.SendMessage(v1.NewItemFetchMessage(*item))
+
+		writer, err := client.StorageDriver.GetWriter(*item)
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			writer.Close()
+		}()
+
+		if item.Size == 0 {
+			slog.Debug("File Fetched Successfully", "item", item)
+			continue
+		}
+
+		bytesRead := 0
+		for {
+			messageType, message, err := client.Conn.ReadMessage()
+			if err != nil {
+				return err
+			}
+
+			if messageType != websocket.BinaryMessage {
+				return fmt.Errorf("invalid messageType received: %d, expected 2 (BinaryMessage)", messageType)
+			}
+
+			writer.Write(message)
+
+			bytesRead += len(message)
+			if bytesRead == item.Size {
+				writer.Close()
+				break
+			}
+
+			if bytesRead > item.Size {
+				return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
+			}
+		}
+		slog.Debug("File Fetched Successfully", "item", item)
+	}
+
+	client.SendMessage(v1.NewInitialSyncDoneMessage(client.Client.LastSync))
+
+	slog.Info("Fully synced")
+
+	// // After the queue is empty, check for any local changes and send them to the server
+	// client.StorageDriver.EnqueueItemsSince(client.Client.LastSync, client.Client.VaultName)
+	//
+	// client.Client.LastSync = int(time.Now().Unix())
+
+	// if client.InitialSync {
+	// 	client.InitialSync = false
+	// 	go client.WatchVault()
+	// 	slog.Debug("Initial Sync Complete")
+	// }
+
+	return nil
+}
+
+func processInitialSyncDoneMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
+	var initialSyncDonePayload v1.InitialSyncDonePayload
+
+	if err := json.Unmarshal(websocketMessage.Payload, &initialSyncDonePayload); err != nil {
+		return err
+	}
+
+	client.InitialSync = true
+	// This is just for info
+	client.Client.LastSync = initialSyncDonePayload.LastSync
+
+	client.SendMessage(v1.NewSyncMessage(initialSyncDonePayload.LastSync))
+
+	slog.Info("Initial Client Sync Done", "vaultName", client.Client.VaultName)
+
+	return nil
+}
+
 // processSyncMessage will start sending data to the client that needs to be synced up
 func processSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var syncPayload v1.SyncPayload
@@ -79,7 +185,7 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 
 		slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
 
-		client.SendMessage(v1.NewItemsSyncMessage(items))
+		client.SendMessage(v1.NewInitialSyncMessage(items))
 	}
 
 	return nil
@@ -99,10 +205,12 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 	}
 	item := itemSavePayload.Item
 
-	// if item.SHA256 == client.StorageDriver.CalculateSHA256(item) {
-	// 	slog.Debug("Item already exists locally", "item", item)
-	// 	return nil
-	// }
+	slog.Debug("sha256", "sha256", item.SHA256, "calculated", client.StorageDriver.CalculateSHA256(item))
+
+	if item.SHA256 == client.StorageDriver.CalculateSHA256(item) {
+		slog.Debug("Item already exists locally", "item", item)
+		return nil
+	}
 
 	slog.Debug("Fetching file from client", "item", item)
 
@@ -146,13 +254,6 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 		}
 	}
 	slog.Debug("File Fetched Successfully", "item", item)
-
-	// itemsService := services.NewItemsService(client.DB)
-	//
-	// err = itemsService.Upsert(&item, client.Client.User.ID)
-	// if err != nil {
-	// 	return err
-	// }
 
 	return nil
 }

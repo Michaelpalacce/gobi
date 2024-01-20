@@ -16,7 +16,11 @@ type Event struct{}
 type Driver interface {
 	Enqueue(items []models.Item)
 
+	EnqueueConflcits()
+
 	HasItemsToProcess() bool
+
+	GetMTime(i models.Item) int64
 
 	GetNext() *models.Item
 
@@ -31,4 +35,6 @@ type Driver interface {
 	Exists(i models.Item) bool
 
 	CalculateSHA256(i models.Item) string
+
+	WatchVault(vaultName string, changeChan chan<- *models.Item) error
 }
