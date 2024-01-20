@@ -84,8 +84,9 @@ func processInitialSyncMessage(websocketMessage messages.WebsocketMessage, clien
 	}
 
 	client.StorageDriver.Enqueue(initialSyncPayload.Items)
-	for client.StorageDriver.HasItemsToProcess() {
-		item := client.StorageDriver.GetNext()
+	// @TODO: Check me
+	for client.StorageDriver.HasItemsToProcess(false) {
+		item := client.StorageDriver.GetNext(false)
 		slog.Debug("Fetching file from client", "item", item)
 
 		client.SendMessage(v1.NewItemFetchMessage(*item))
@@ -170,7 +171,7 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 			return err
 		}
 
-		items := client.StorageDriver.GetAllItems()
+		items := client.StorageDriver.GetAllItems(false)
 
 		slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
 
@@ -256,14 +257,7 @@ func processItemFetchMessage(websocketMessage messages.WebsocketMessage, client 
 		return err
 	}
 
-	item, err := client.StorageDriver.GetReader(itemFetchPayload.Item)
-	if err != nil {
-		return err
-	}
-
-	defer item.Close()
-
-	if err := client.SendItem(item); err != nil {
+	if err := client.SendItem(itemFetchPayload.Item); err != nil {
 		return err
 	}
 

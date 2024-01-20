@@ -6,9 +6,8 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/lmittmann/tint v1.0.3
 	go.mongodb.org/mongo-driver v1.13.0
+	github.com/fsnotify/fsnotify v1.7.0
 )
-
-require github.com/fsnotify/fsnotify v1.7.0 // indirect
 
 require (
 	github.com/bytedance/sonic v1.10.2 // indirect

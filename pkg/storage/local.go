@@ -52,27 +52,21 @@ func (d *LocalDriver) GetMTime(i models.Item) int64 {
 	return fileInfo.ModTime().Unix()
 }
 
-func (d *LocalDriver) EnqueueConflcits() {
-	d.queue = append(d.queue, d.conflicts...)
-	d.conflicts = make([]models.Item, 0)
-}
-
 // GetNext will return the next File in the queue
-func (d *LocalDriver) GetNext() *models.Item {
-	if len(d.queue) > 0 {
+func (d *LocalDriver) GetNext(conflictMode bool) *models.Item {
+	if conflictMode && len(d.conflicts) > 0 {
+		var current models.Item
+		current, d.conflicts = d.conflicts[0], d.conflicts[1:]
+		return &current
+	}
+
+	if !conflictMode && len(d.queue) > 0 {
 		var current models.Item
 		current, d.queue = d.queue[0], d.queue[1:]
 		return &current
 	}
 
 	return nil
-}
-
-func (d *LocalDriver) GetAllItems() []models.Item {
-	queue := d.queue
-	d.queue = make([]models.Item, 0)
-
-	return queue
 }
 
 // CheckIfLocalMatch will build up the correct filePath based on the item and check if what we have locally matches.
@@ -93,8 +87,25 @@ func (d *LocalDriver) checkIfLocalMatch(i models.Item) bool {
 }
 
 // HasItemsToProcess will return true if there is more than one item in the queue
-func (d *LocalDriver) HasItemsToProcess() bool {
+func (d *LocalDriver) HasItemsToProcess(conflictMode bool) bool {
+	if conflictMode {
+		return len(d.conflicts) > 0
+	}
+
 	return len(d.queue) > 0
+}
+
+func (d *LocalDriver) GetAllItems(conflictMode bool) []models.Item {
+	if conflictMode {
+		queue := d.conflicts
+		d.conflicts = make([]models.Item, 0)
+		return queue
+	}
+
+	queue := d.queue
+	d.queue = make([]models.Item, 0)
+
+	return queue
 }
 
 // GetReader should be used to get a reader for the given item, when you want to send it

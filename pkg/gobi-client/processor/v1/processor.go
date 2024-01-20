@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"time"
 
+	v1_syncstrategies "github.com/Michaelpalacce/gobi/pkg/gobi-client/syncStrategies/v1"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
-	"github.com/gorilla/websocket"
 )
 
 // ProcessClientTextMessage will decide how to process the text message.
@@ -40,6 +40,7 @@ func ProcessClientTextMessage(websocketMessage messages.WebsocketMessage, client
 	return nil
 }
 
+// processInitialSyncDoneMessage notifies the client that the server is done with the initial sync
 func processInitialSyncDoneMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var initialSyncDonePayload v1.InitialSyncDonePayload
 
@@ -66,11 +67,8 @@ func processInitialSyncDoneMessage(websocketMessage messages.WebsocketMessage, c
 		slog.Info("Starting to watch vault", "vaultName", client.Client.VaultName)
 
 		go func() {
-			for {
-				select {
-				case item := <-changeChan:
-					client.SendMessage(v1.NewItemSavePayload(*item))
-				}
+			for item := range changeChan {
+				client.SendMessage(v1.NewItemSavePayload(*item))
 			}
 		}()
 	}
@@ -78,7 +76,7 @@ func processInitialSyncDoneMessage(websocketMessage messages.WebsocketMessage, c
 	return nil
 }
 
-// processItemFetchMessage will start sending data to the client about the requested file
+// processItemFetchMessage will start sending the file to the server
 func processItemFetchMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var itemFetchPayload v1.ItemFetchPayload
 
@@ -86,20 +84,18 @@ func processItemFetchMessage(websocketMessage messages.WebsocketMessage, client 
 		return err
 	}
 
-	item, err := client.StorageDriver.GetReader(itemFetchPayload.Item)
-	if err != nil {
-		return err
-	}
+	syncStrategy := getSyncStrategy(client)
 
-	defer item.Close()
-
-	if err := client.SendItem(item); err != nil {
+	if err := syncStrategy.SendSingle(client, itemFetchPayload.Item); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+// processSyncMessage is a request from the server that it wants to sync.
+// The client will send all items that have been modified since the last sync (provided by the server)
+// @NOTE: Should this use the sync strategy?
 func processSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var syncPayload v1.SyncPayload
 
@@ -115,7 +111,7 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 			return err
 		}
 
-		items := client.StorageDriver.GetAllItems()
+		items := client.StorageDriver.GetAllItems(false)
 
 		slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
 
@@ -125,11 +121,11 @@ func processSyncMessage(websocketMessage messages.WebsocketMessage, client *sock
 	return nil
 }
 
-// processInitialSyncMessage adds items to the queue
+// processInitialSyncMessage takes the list of items from the server and compares them to the local vault
 // Check if sha256 matches locally
 // Request File if it does not.
 // If a file is not sent back in 30 seconds, close the connection
-// This is done only once, after the initial sync, the client will watch the vault for changes
+// This is done only once
 func processInitialSyncMessage(websocketMessage messages.WebsocketMessage, client *socket.WebsocketClient) error {
 	var initialSyncPayload v1.InitialSyncPayload
 
@@ -141,12 +137,13 @@ func processInitialSyncMessage(websocketMessage messages.WebsocketMessage, clien
 	}
 
 	client.StorageDriver.Enqueue(initialSyncPayload.Items)
-	if err := handleStorageItems(client, false); err != nil {
+
+	syncStrategy := getSyncStrategy(client)
+
+	if err := syncStrategy.Fetch(client); err != nil {
 		return err
 	}
-
-	client.StorageDriver.EnqueueConflcits()
-	if err := handleStorageItems(client, true); err != nil {
+	if err := syncStrategy.FetchConflicts(client); err != nil {
 		return err
 	}
 
@@ -155,65 +152,11 @@ func processInitialSyncMessage(websocketMessage messages.WebsocketMessage, clien
 	return nil
 }
 
-func handleStorageItems(client *socket.WebsocketClient, conflictMode bool) error {
-processor:
-	for client.StorageDriver.HasItemsToProcess() {
-		item := client.StorageDriver.GetNext()
-
-		if conflictMode {
-			if item.ServerMTime < client.StorageDriver.GetMTime(*item) {
-				slog.Debug("Skipping conflict", "item", item)
-				continue processor
-			}
-		}
-
-		slog.Debug("Fetching file from server", "item", item)
-
-		client.SendMessage(v1.NewItemFetchMessage(*item))
-
-		writer, err := client.StorageDriver.GetWriter(*item)
-		if err != nil {
-			return err
-		}
-
-		defer func() {
-			writer.Close()
-		}()
-
-		if item.Size == 0 {
-			slog.Debug("File Fetched Successfully", "item", item)
-			continue
-		}
-
-		bytesRead := 0
-		for {
-			messageType, message, err := client.Conn.ReadMessage()
-			if err != nil {
-				return err
-			}
-
-			if messageType != websocket.BinaryMessage {
-				return fmt.Errorf("invalid messageType received: %d, expected 2 (BinaryMessage)", messageType)
-			}
-
-			writer.Write(message)
-
-			bytesRead += len(message)
-			if bytesRead == item.Size {
-				writer.Close()
-				break
-			}
-
-			if bytesRead > item.Size {
-				return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
-			}
-		}
-		slog.Debug("File Fetched Successfully", "item", item)
-	}
-
+func ProcessClientBinaryMessage(message []byte, client *socket.WebsocketClient) error {
 	return nil
 }
 
-func ProcessClientBinaryMessage(message []byte, client *socket.WebsocketClient) error {
-	return nil
+// @TODO: This should be configurable, but for now, this is the only sync strategy
+func getSyncStrategy(client *socket.WebsocketClient) v1_syncstrategies.SyncStrategy {
+	return v1_syncstrategies.NewDefaultSyncStrategy(client.StorageDriver)
 }

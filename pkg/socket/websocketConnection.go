@@ -8,6 +8,7 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
+	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/gorilla/websocket"
@@ -64,8 +65,16 @@ func (c *WebsocketClient) SendMessage(message messages.WebsocketRequest) error {
 	return nil
 }
 
-// SendBigFile will send an item to the client without storing bigger than 1024 chunks in memory
-func (c *WebsocketClient) SendItem(reader io.Reader) error {
+// SendItem will send an item to the the client/server
+func (c *WebsocketClient) SendItem(item models.Item) error {
+	slog.Debug("Sending file to server", "item", item)
+
+	reader, err := c.StorageDriver.GetReader(item)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
 	buffer := make([]byte, 1024)
 
 	for {
@@ -83,6 +92,55 @@ func (c *WebsocketClient) SendItem(reader io.Reader) error {
 			return fmt.Errorf("error reading file chunk: %s", err)
 		}
 	}
+
+	slog.Debug("File Sent Successfully", "item", item)
+
+	return nil
+}
+
+// FetchItem will receive an item from the client/server
+func (c *WebsocketClient) FetchItem(item models.Item) error {
+	slog.Debug("Fetching file", "item", item)
+	c.SendMessage(v1.NewItemFetchMessage(item))
+
+	writer, err := c.StorageDriver.GetWriter(item)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		writer.Close()
+	}()
+
+	if item.Size == 0 {
+		slog.Debug("File Fetched Successfully", "item", item)
+		return nil
+	}
+
+	bytesRead := 0
+	for {
+		messageType, message, err := c.Conn.ReadMessage()
+		if err != nil {
+			return err
+		}
+
+		if messageType != websocket.BinaryMessage {
+			return fmt.Errorf("invalid messageType received: %d, expected 2 (BinaryMessage)", messageType)
+		}
+
+		writer.Write(message)
+
+		bytesRead += len(message)
+		if bytesRead == item.Size {
+			writer.Close()
+			break
+		}
+
+		if bytesRead > item.Size {
+			return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
+		}
+	}
+	slog.Debug("File Fetched Successfully", "item", item)
 
 	return nil
 }

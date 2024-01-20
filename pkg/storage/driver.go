@@ -16,15 +16,13 @@ type Event struct{}
 type Driver interface {
 	Enqueue(items []models.Item)
 
-	EnqueueConflcits()
+	HasItemsToProcess(conflictMode bool) bool
 
-	HasItemsToProcess() bool
+	GetAllItems(conflictMode bool) []models.Item
 
 	GetMTime(i models.Item) int64
 
-	GetNext() *models.Item
-
-	GetAllItems() []models.Item
+	GetNext(conflictMode bool) *models.Item
 
 	EnqueueItemsSince(lastSyncTime int, vaultName string)
 
