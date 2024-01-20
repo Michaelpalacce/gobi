@@ -3,7 +3,6 @@ package connection
 import (
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	processor_v1 "github.com/Michaelpalacce/gobi/pkg/gobi/processor/v1"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
@@ -12,6 +11,9 @@ import (
 )
 
 // ServerConnection represents a connected WebSocket client
+// It will handle the processing of the messages and send them to the processor
+// It will also handle the initial connection
+// Reconnections are not handled here, the clients will have to handle that
 type ServerConnection struct {
 	WebsocketClient *socket.WebsocketClient
 	V1Processor     *processor_v1.Processor
@@ -19,8 +21,14 @@ type ServerConnection struct {
 
 // Listen will request information from the client and then listen for data.
 func (c *ServerConnection) Listen(closeChan chan<- error) {
-	c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
+	c.initProcessors()
+
 	closeChan <- c.readMessage()
+}
+
+// initProcessors will initialize the processors for the client
+func (c *ServerConnection) initProcessors() {
+	c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
@@ -35,8 +43,7 @@ func (c *ServerConnection) readMessage() (closeError error) {
 out:
 	for {
 		messageType, message, err := c.WebsocketClient.Conn.ReadMessage()
-		slog.Debug("Received message from client", "message", string(message), "messageType", messageType)
-
+		// slog.Debug("Received message from client", "message", string(message), "messageType", messageType)
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
 				// The other side has closed the connection gracefully

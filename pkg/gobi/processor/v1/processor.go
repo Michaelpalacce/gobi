@@ -14,16 +14,16 @@ import (
 )
 
 type Processor struct {
-	SyncStrategy syncstrategies.SyncStrategy
-	Client       *socket.WebsocketClient
+	SyncStrategy    syncstrategies.SyncStrategy
+	WebsocketClient *socket.WebsocketClient
 }
 
 // NewProcessor will create a new processor with a default sync strategy of LastModifiedTime
 // The SyncStrategy can be changed later
 func NewProcessor(client *socket.WebsocketClient) *Processor {
 	return &Processor{
-		Client:       client,
-		SyncStrategy: syncstrategies.NewLastModifiedTimeSyncStrategy(client.StorageDriver, client),
+		WebsocketClient: client,
+		SyncStrategy:    syncstrategies.NewLastModifiedTimeSyncStrategy(client.StorageDriver, client),
 	}
 }
 
@@ -34,7 +34,7 @@ func (p *Processor) ProcessServerBinaryMessage(websocketMessage messages.Websock
 
 // ProcessServerTextMessage will decide how to process the text message.
 func (p *Processor) ProcessServerTextMessage(websocketMessage messages.WebsocketMessage) error {
-	if p.Client.Client.Version == 0 {
+	if p.WebsocketClient.Client.Version == 0 {
 		return fmt.Errorf("before communications can happen, client must send %s message to specify version to use for responses", messages.VersionType)
 	}
 
@@ -83,7 +83,7 @@ func (p *Processor) processSyncStrategyMessag(websocketMessage messages.Websocke
 
 	switch syncStrategyPayload.SyncStrategy {
 	case syncstrategies.LastModifiedTimeStrategy:
-		p.Client.Client.SyncStrategy = syncStrategyPayload.SyncStrategy
+		p.WebsocketClient.Client.SyncStrategy = syncStrategyPayload.SyncStrategy
 	default:
 		return fmt.Errorf("unknown sync strategy: %d", syncStrategyPayload.SyncStrategy)
 	}
@@ -98,7 +98,7 @@ func (p *Processor) processVaultNameMessage(websocketMessage messages.WebsocketM
 	if err := json.Unmarshal(websocketMessage.Payload, &vaultNamePayload); err != nil {
 		return err
 	} else {
-		p.Client.Client.VaultName = vaultNamePayload.VaultName
+		p.WebsocketClient.Client.VaultName = vaultNamePayload.VaultName
 	}
 
 	return nil
@@ -112,21 +112,21 @@ func (p *Processor) processVaultNameMessage(websocketMessage messages.WebsocketM
 func (p *Processor) processInitialSyncMessage(websocketMessage messages.WebsocketMessage) error {
 	var initialSyncPayload v1.InitialSyncPayload
 
-	p.Client.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-	defer p.Client.Conn.SetReadDeadline(time.Time{})
+	p.WebsocketClient.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
+	defer p.WebsocketClient.Conn.SetReadDeadline(time.Time{})
 
 	if err := json.Unmarshal(websocketMessage.Payload, &initialSyncPayload); err != nil {
 		return err
 	}
 
-	p.Client.StorageDriver.Enqueue(initialSyncPayload.Items)
+	p.WebsocketClient.StorageDriver.Enqueue(initialSyncPayload.Items)
 
 	syncStrategy := p.SyncStrategy
-	if err := syncStrategy.FetchMultiple(p.Client.StorageDriver.GetAllItems(storage.ConflictModeNo), storage.ConflictModeNo); err != nil {
+	if err := syncStrategy.FetchMultiple(p.WebsocketClient.StorageDriver.GetAllItems(storage.ConflictModeNo), storage.ConflictModeNo); err != nil {
 		return err
 	}
 
-	p.Client.SendMessage(v1.NewInitialSyncDoneMessage(p.Client.Client.LastSync))
+	p.WebsocketClient.SendMessage(v1.NewInitialSyncDoneMessage(p.WebsocketClient.Client.LastSync))
 
 	slog.Info("Fully synced")
 
@@ -140,13 +140,13 @@ func (p *Processor) processInitialSyncDoneMessage(websocketMessage messages.Webs
 		return err
 	}
 
-	p.Client.InitialSync = true
+	p.WebsocketClient.InitialSync = true
 	// This is just for info
-	p.Client.Client.LastSync = initialSyncDonePayload.LastSync
+	p.WebsocketClient.Client.LastSync = initialSyncDonePayload.LastSync
 
-	p.Client.SendMessage(v1.NewSyncMessage(initialSyncDonePayload.LastSync))
+	p.WebsocketClient.SendMessage(v1.NewSyncMessage(initialSyncDonePayload.LastSync))
 
-	slog.Info("Initial Client Sync Done", "vaultName", p.Client.Client.VaultName)
+	slog.Info("Initial Client Sync Done", "vaultName", p.WebsocketClient.Client.VaultName)
 
 	return nil
 }
@@ -158,19 +158,19 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 	if err := json.Unmarshal(websocketMessage.Payload, &syncPayload); err != nil {
 		return err
 	} else {
-		p.Client.StorageDriver.EnqueueItemsSince(
+		p.WebsocketClient.StorageDriver.EnqueueItemsSince(
 			syncPayload.LastSync,
-			p.Client.Client.VaultName,
+			p.WebsocketClient.Client.VaultName,
 		)
 		if err != nil {
 			return err
 		}
 
-		items := p.Client.StorageDriver.GetAllItems(storage.ConflictModeNo)
+		items := p.WebsocketClient.StorageDriver.GetAllItems(storage.ConflictModeNo)
 
 		slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
 
-		p.Client.SendMessage(v1.NewInitialSyncMessage(items))
+		p.WebsocketClient.SendMessage(v1.NewInitialSyncMessage(items))
 	}
 
 	return nil
@@ -187,9 +187,9 @@ func (p *Processor) processItemSaveMessage(websocketMessage messages.WebsocketMe
 	}
 	item := itemSavePayload.Item
 
-	if item.SHA256 == p.Client.StorageDriver.CalculateSHA256(item) {
+	if item.SHA256 == p.WebsocketClient.StorageDriver.CalculateSHA256(item) {
 		// @TODO: touch the files in peer servers, send an event via redis
-		if err := p.Client.StorageDriver.Touch(item); err != nil {
+		if err := p.WebsocketClient.StorageDriver.Touch(item); err != nil {
 			return err
 		}
 		slog.Info("Item already exists locally", "item", item)

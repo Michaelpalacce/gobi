@@ -45,11 +45,6 @@ func (c *WebsocketClient) Close(msg string) {
 	_ = c.Conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, string(payload.Marshal())))
 }
 
-func (c *WebsocketClient) WatchVault(changeChan chan<- *models.Item) error {
-	c.StorageDriver.WatchVault(c.Client.VaultName, changeChan)
-	return nil
-}
-
 // sendMessage enforces a uniform style in sending data
 func (c *WebsocketClient) SendMessage(message messages.WebsocketRequest) error {
 	if c.closed {

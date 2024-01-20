@@ -13,15 +13,18 @@ import (
 )
 
 // ClientConnection handles the initial processing of the websocket messages and sends it off to the WebsocketClient to take care of them
+// Reconnections are not handled here, the surrounding code will have to handle that
 type ClientConnection struct {
 	WebsocketClient *socket.WebsocketClient
 	V1Processor     *processor_v1.Processor
 }
 
-// Listen will request information from the client and then listen for data.
+// Listen requests information from the server and then listens for data
 func (c *ClientConnection) Listen(closeChan chan<- error) {
+	// Mark the initial sync as started
 	c.WebsocketClient.InitialSync = true
-	c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
+
+	c.initProcessors()
 
 	initChan := make(chan error, 1)
 	readMessageChan := make(chan error, 1)
@@ -37,6 +40,11 @@ func (c *ClientConnection) Listen(closeChan chan<- error) {
 	case err := <-readMessageChan:
 		closeChan <- err
 	}
+}
+
+// initProcessors will initialize the processors for the client
+func (c *ClientConnection) initProcessors() {
+	c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.

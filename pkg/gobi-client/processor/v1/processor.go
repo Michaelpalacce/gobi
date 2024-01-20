@@ -14,9 +14,11 @@ import (
 	syncstrategies "github.com/Michaelpalacce/gobi/pkg/syncStrategies"
 )
 
+// Processor is the processor for version 1 of the protocol
+// It contains the business logic for the protocol
 type Processor struct {
-	SyncStrategy syncstrategies.SyncStrategy
-	Client       *socket.WebsocketClient
+	SyncStrategy    syncstrategies.SyncStrategy
+	WebsocketClient *socket.WebsocketClient
 }
 
 // NewProcessor will create a new processor with the selected sync strategy in the client
@@ -32,8 +34,8 @@ func NewProcessor(client *socket.WebsocketClient) *Processor {
 	}
 
 	return &Processor{
-		Client:       client,
-		SyncStrategy: syncStrategy,
+		WebsocketClient: client,
+		SyncStrategy:    syncStrategy,
 	}
 }
 
@@ -72,27 +74,26 @@ func (p *Processor) processInitialSyncDoneMessage(websocketMessage messages.Webs
 		return err
 	}
 
-	p.Client.InitialSync = true
 	// TODO: This needs to be persisted, in the same place we retrieved it from
-	p.Client.Client.LastSync = initialSyncDonePayload.LastSync
+	p.WebsocketClient.Client.LastSync = initialSyncDonePayload.LastSync
 
-	slog.Info("Initial Server Sync Done", "vaultName", p.Client.Client.VaultName)
+	slog.Info("Initial Server Sync Done", "vaultName", p.WebsocketClient.Client.VaultName)
 	slog.Info("Fully synced")
 
 	// This needs to be persisted somehow
-	p.Client.Client.LastSync = int(time.Now().Unix())
+	p.WebsocketClient.Client.LastSync = int(time.Now().Unix())
 
-	if p.Client.InitialSync {
-		p.Client.InitialSync = false
+	if p.WebsocketClient.InitialSync {
+		p.WebsocketClient.InitialSync = false
 
 		changeChan := make(chan *models.Item)
 
-		go p.Client.WatchVault(changeChan)
-		slog.Info("Starting to watch vault", "vaultName", p.Client.Client.VaultName)
+		go p.WebsocketClient.StorageDriver.WatchVault(p.WebsocketClient.Client.VaultName, changeChan)
+		slog.Info("Starting to watch vault", "vaultName", p.WebsocketClient.Client.VaultName)
 
 		go func() {
 			for item := range changeChan {
-				p.Client.SendMessage(v1.NewItemSavePayload(*item))
+				p.WebsocketClient.SendMessage(v1.NewItemSavePayload(*item))
 			}
 		}()
 	}
@@ -126,20 +127,20 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 	if err := json.Unmarshal(websocketMessage.Payload, &syncPayload); err != nil {
 		return err
 	} else {
-		p.Client.StorageDriver.EnqueueItemsSince(
+		p.WebsocketClient.StorageDriver.EnqueueItemsSince(
 			syncPayload.LastSync,
-			p.Client.Client.VaultName,
+			p.WebsocketClient.Client.VaultName,
 		)
 
 		if err != nil {
 			return err
 		}
 
-		items := p.Client.StorageDriver.GetAllItems(storage.ConflictModeNo)
+		items := p.WebsocketClient.StorageDriver.GetAllItems(storage.ConflictModeNo)
 
 		slog.Debug("Items found for sync since last reconcillation", "items", len(items), "lastSync", syncPayload.LastSync)
 
-		p.Client.SendMessage(v1.NewInitialSyncMessage(items))
+		p.WebsocketClient.SendMessage(v1.NewInitialSyncMessage(items))
 	}
 
 	return nil
@@ -157,7 +158,7 @@ func (p *Processor) processInitialSyncMessage(websocketMessage messages.Websocke
 		return err
 	}
 
-	p.Client.StorageDriver.Enqueue(initialSyncPayload.Items)
+	p.WebsocketClient.StorageDriver.Enqueue(initialSyncPayload.Items)
 
 	syncStrategy := p.SyncStrategy
 
@@ -168,7 +169,7 @@ func (p *Processor) processInitialSyncMessage(websocketMessage messages.Websocke
 		return err
 	}
 
-	p.Client.SendMessage(v1.NewInitialSyncDoneMessage(p.Client.Client.LastSync))
+	p.WebsocketClient.SendMessage(v1.NewInitialSyncDoneMessage(p.WebsocketClient.Client.LastSync))
 
 	return nil
 }
