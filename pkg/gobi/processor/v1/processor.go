@@ -134,17 +134,6 @@ func processInitialSyncMessage(websocketMessage messages.WebsocketMessage, clien
 
 	slog.Info("Fully synced")
 
-	// // After the queue is empty, check for any local changes and send them to the server
-	// client.StorageDriver.EnqueueItemsSince(client.Client.LastSync, client.Client.VaultName)
-	//
-	// client.Client.LastSync = int(time.Now().Unix())
-
-	// if client.InitialSync {
-	// 	client.InitialSync = false
-	// 	go client.WatchVault()
-	// 	slog.Debug("Initial Sync Complete")
-	// }
-
 	return nil
 }
 
@@ -205,9 +194,9 @@ func processItemSaveMessage(websocketMessage messages.WebsocketMessage, client *
 	}
 	item := itemSavePayload.Item
 
-	slog.Debug("sha256", "sha256", item.SHA256, "calculated", client.StorageDriver.CalculateSHA256(item))
-
 	if item.SHA256 == client.StorageDriver.CalculateSHA256(item) {
+		// @TODO: Touch the file, update the mtime
+		// Do the same for the client
 		slog.Debug("Item already exists locally", "item", item)
 		return nil
 	}

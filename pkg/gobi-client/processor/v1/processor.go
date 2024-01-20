@@ -152,17 +152,6 @@ func processInitialSyncMessage(websocketMessage messages.WebsocketMessage, clien
 
 	client.SendMessage(v1.NewInitialSyncDoneMessage(client.Client.LastSync))
 
-	// // After the queue is empty, check for any local changes and send them to the server
-	// client.StorageDriver.EnqueueItemsSince(client.Client.LastSync, client.Client.VaultName)
-	//
-	// client.Client.LastSync = int(time.Now().Unix())
-
-	// if client.InitialSync {
-	// 	client.InitialSync = false
-	// 	go client.WatchVault()
-	// 	slog.Debug("Initial Sync Complete")
-	// }
-
 	return nil
 }
 

@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -35,7 +34,6 @@ func (d *LocalDriver) Enqueue(items []models.Item) {
 		if ok := d.checkIfLocalMatch(item); !ok {
 			fileInfo, err := os.Stat(d.getFilePath(item))
 			if err == nil && fileInfo.ModTime().Unix() > item.ServerMTime {
-				slog.Debug("Enqueueing conflict", "item", item)
 				d.conflicts = append(d.conflicts, item)
 				continue
 			}
@@ -199,7 +197,7 @@ func (d *LocalDriver) WatchVault(vaultName string, changeChan chan<- *models.Ite
 	// Create new watcher.
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer watcher.Close()
 
@@ -230,7 +228,7 @@ func (d *LocalDriver) WatchVault(vaultName string, changeChan chan<- *models.Ite
 					}
 
 					item.SHA256 = d.CalculateSHA256(item)
-					log.Println("modified file:", event.Name)
+					slog.Debug("Sending item to changeChan", "item", item)
 					changeChan <- &item
 					// d.Enqueue([]models.Item{item})
 				}
@@ -239,19 +237,42 @@ func (d *LocalDriver) WatchVault(vaultName string, changeChan chan<- *models.Ite
 				if !ok {
 					return
 				}
-				log.Println("error:", err)
+
+				slog.Error("error:", err)
 			}
 		}
 	}()
 
 	// Add a path.
 	path := filepath.Join(d.VaultsPath, vaultName)
-	slog.Debug("Watching path", "path", path)
-	err = watcher.Add(path)
+	slog.Info("Watching path", "path", path)
+	err = d.addRecursiveWatchers(watcher, path, false)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	// Block main goroutine forever.
 	<-make(chan struct{})
 	return nil
+}
+
+// From https://github.com/farmergreg/rfsnotify/blob/master/rfsnotify.go
+func (d *LocalDriver) addRecursiveWatchers(watcher *fsnotify.Watcher, path string, unWatch bool) error {
+	err := filepath.Walk(path, func(walkPath string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if fi.IsDir() {
+			if unWatch {
+				if err = watcher.Remove(walkPath); err != nil {
+					return err
+				}
+			} else {
+				if err = watcher.Add(walkPath); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	return err
 }

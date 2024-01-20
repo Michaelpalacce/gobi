@@ -31,7 +31,7 @@ func NewUsersService(db *database.Database) *UsersService {
 //
 // Will return an error if the user already exists or other issues happen
 func (u UsersService) CreateUser(user *models.User) error {
-	slog.Debug("Creating a new user", "user", user.Username)
+	slog.Info("Creating a new user", "user", user.Username)
 
 	userCollection := u.DB.Collections.UsersCollection
 
@@ -60,7 +60,7 @@ func (u UsersService) CreateUser(user *models.User) error {
 
 	user.ID = id
 
-	slog.Debug("User Created", "ID", user.ID)
+	slog.Info("User Created", "ID", user.ID)
 
 	return nil
 }
@@ -68,7 +68,7 @@ func (u UsersService) CreateUser(user *models.User) error {
 // DeleteUser deletes the user given the ID.
 // If the user doesn't exist, does nothing.
 func (u UsersService) DeleteUser(id string) error {
-	slog.Debug("Deleting user", "id", id)
+	slog.Info("Deleting user", "id", id)
 	userCollection := u.DB.Collections.UsersCollection
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
