@@ -111,7 +111,9 @@ func (d *LocalDriver) GetAllItems(conflictMode bool) []models.Item {
 	return queue
 }
 
-// GetReader should be used to get a reader for the given item, when you want to send it
+// GetReader opens a file in the local storage and returns a reader for it.
+// It returns an error if the file cannot be opened.
+// The caller is responsible for closing the reader.
 func (d *LocalDriver) GetReader(i models.Item) (io.ReadCloser, error) {
 	file, err := os.Open(d.getFilePath(i))
 	if err != nil {
