@@ -29,9 +29,20 @@ func NewUsersService(db *database.Database) *UsersService {
 //
 // # If a user is created successfully, then the InsertedID will be set in the passed user
 //
+// # Validate username allows only alphanumeric characters and underscores
+//
 // Will return an error if the user already exists or other issues happen
 func (u UsersService) CreateUser(user *models.User) error {
 	slog.Info("Creating a new user", "user", user.Username)
+
+	if user.Username == "" {
+		return fmt.Errorf("username cannot be empty")
+	}
+
+	// Validate username allows only alphanumeric characters and underscores
+	if !models.ValidateUsername(user.Username) {
+		return fmt.Errorf("username must only contain alphanumeric characters and underscores")
+	}
 
 	userCollection := u.DB.Collections.UsersCollection
 
