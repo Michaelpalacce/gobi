@@ -45,7 +45,7 @@ func (p *Processor) ProcessServerTextMessage(websocketMessage messages.Websocket
 			return err
 		}
 	case v1.SyncStrategyType:
-		if err := p.processSyncStrategyMessag(websocketMessage); err != nil {
+		if err := p.processSyncStrategyMessage(websocketMessage); err != nil {
 			return err
 		}
 	case v1.SyncType:
@@ -75,7 +75,7 @@ func (p *Processor) ProcessServerTextMessage(websocketMessage messages.Websocket
 	return nil
 }
 
-func (p *Processor) processSyncStrategyMessag(websocketMessage messages.WebsocketMessage) error {
+func (p *Processor) processSyncStrategyMessage(websocketMessage messages.WebsocketMessage) error {
 	var syncStrategyPayload v1.SyncStrategyPayload
 
 	if err := json.Unmarshal(websocketMessage.Payload, &syncStrategyPayload); err != nil {
@@ -85,6 +85,7 @@ func (p *Processor) processSyncStrategyMessag(websocketMessage messages.Websocke
 	switch syncStrategyPayload.SyncStrategy {
 	case syncstrategies.LastModifiedTimeStrategy:
 		p.WebsocketClient.Client.SyncStrategy = syncStrategyPayload.SyncStrategy
+		p.SyncStrategy = syncstrategies.NewLastModifiedTimeSyncStrategy(p.WebsocketClient.StorageDriver, p.WebsocketClient)
 	default:
 		return fmt.Errorf("unknown sync strategy: %d", syncStrategyPayload.SyncStrategy)
 	}
