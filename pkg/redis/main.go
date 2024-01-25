@@ -80,3 +80,15 @@ func Publish(channel string, message interface{}) error {
 func Subscribe(channels ...string) *redis.PubSub {
 	return rdb.Subscribe(ctx, channels...)
 }
+
+func Lock(key string, expiration time.Duration) (bool, error) {
+	return rdb.SetNX(ctx, key, true, expiration).Result()
+}
+
+func Renew(key string, expiration time.Duration) error {
+	return Expire(key, expiration)
+}
+
+func Unlock(key string) error {
+	return Del(key)
+}
