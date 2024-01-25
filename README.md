@@ -2,6 +2,24 @@
 
 Go Bi-Directional Sync With API
 
+## Thoughts
+
+### Problems with multiple concurrent requests.
+
+1. Server wants to send 5 files to the client.
+2. The server sends 5 requests to the client at the same time
+3. Everything breaks apart
+4. I think the correct thing to do would be to use normal REST communication in this case.
+
+If I do use rest, I can queue up fetches and pushes on the client easilly. The Server does not need to queue anything,
+rather the server just needs to notify the client.
+
+- [ ] Implement rest interface for sending and receiving items
+- [ ] Refactor syncstrategies
+- [ ] Refactor websocket to not send and receive file anymore, create a separate helper
+- [ ] Refactor the processors to send the files with REST
+- [ ] Remove unnecessary messages.
+
 ## Roadmap
 
 - [x] Database
@@ -30,4 +48,61 @@ Go Bi-Directional Sync With API
   - Different storage drivers
 - Resilient
 - Secure
+
+## Requirements
+
+### Functional Requirements
+
+### Non-Functional Requirements
+
+## Design
+
+### Websocket Handling
+
+The client will use websockets as a way of communication, to receive notifications from the server about any changes done by other connected
+clients to the same vault. 
+
+Any form of metadata will be transferred via websockets, to speed up the overall application.
+
+Files will never be sent out via websockets and instead will be handled by the [Data Transmission Use Case](#data-transmission). However,
+renaming, deletion and other similar actions are accepted.
+
+It is possible for renaming and deletion to result in a notification to the client that the operation could not be completed. If this is so,
+the server must notify what actions the client should take to catch up and be in sync with the rest. 
+
+The communication will be Bi-Directional between the client and the server, where each party can notify the other for any changes that they
+wish to do to the method of communication. The server and client must be able to respond to any such changes effective from receiving that
+message.
+
+#### Notifying the client for errors from the requested operation
+
+In case when the server denied the request, that means that conflict resolution happend and the server decided that the change was stale. At
+this point, the server must notify the client as he would normally of what kind of change is needed.
+
+Example would be the client changes a file, but the server receives a delete signal before the client has a chance to react and the
+sync strategy determined that the server has the correct record.
+
+### Data Transmission
+
+The client will use REST communication for sending and receiving files.
+
+Upon receiving a file if the file is changed from what the server has locally, the receiving server should notify all others that the 
+file has been changed by way of Redis channels
+
+### Sync Strategies Abstraction
+
+Sync starategies will be used to hold different conflict resolution methods. They are an abstraction that is supposed to make an automated
+or non-automated decision what should happen in case of a sync conflict. 
+
+### Storage Abstraction
+
+The storage layer of the application will be abstracted, allowing different drivers to be created in the future.
+
+- [ ] Local
+- [ ] AWS
+- [ ] NFS
+
+### Concurrency
+
+### Bi-Directional Syncing
 
