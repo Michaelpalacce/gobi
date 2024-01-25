@@ -8,6 +8,7 @@ import (
 
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
+	"github.com/Michaelpalacce/gobi/pkg/redis"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 	syncstrategies "github.com/Michaelpalacce/gobi/pkg/syncStrategies"
@@ -130,7 +131,20 @@ func (p *Processor) processInitialSyncMessage(websocketMessage messages.Websocke
 
 	slog.Info("Fully synced")
 
+	go p.subscribeToRedis()
+
 	return nil
+}
+
+func (p *Processor) subscribeToRedis() {
+	chanName := p.WebsocketClient.Client.User.Username + "-" + p.WebsocketClient.Client.VaultName
+	redisChan := redis.Subscribe(chanName).Channel()
+	slog.Info("Subscribed to Redis channel", "channel", chanName)
+
+	for {
+		msg := <-redisChan
+		fmt.Println(msg.Payload)
+	}
 }
 
 func (p *Processor) processInitialSyncDoneMessage(websocketMessage messages.WebsocketMessage) error {
