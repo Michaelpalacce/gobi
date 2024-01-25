@@ -12,6 +12,7 @@ import (
 
 // LastModifiedTimeSyncStrategy is the default sync strategy
 // Resolution is done by accepting the latest version of the file based on mtime
+// TODO: Make this a struct with a mutex so that it can be used concurrently
 type LastModifiedTimeSyncStrategy struct {
 	Driver storage.Driver
 	Client *socket.WebsocketClient
