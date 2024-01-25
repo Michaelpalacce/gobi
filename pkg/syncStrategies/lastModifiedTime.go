@@ -24,6 +24,7 @@ func NewLastModifiedTimeSyncStrategy(driver storage.Driver, client *socket.Webso
 	}
 }
 
+// SendSingle will send a single item to the remote
 func (s *LastModifiedTimeSyncStrategy) SendSingle(item models.Item) error {
 	slog.Debug("Sending item", "item", item)
 

@@ -126,22 +126,18 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 
 	if err := json.Unmarshal(websocketMessage.Payload, &syncPayload); err != nil {
 		return err
-	} else {
-		p.WebsocketClient.StorageDriver.EnqueueItemsSince(
-			syncPayload.LastSync,
-			p.WebsocketClient.Client.VaultName,
-		)
-
-		if err != nil {
-			return err
-		}
-
-		items := p.WebsocketClient.StorageDriver.GetAllItems(storage.ConflictModeNo)
-
-		slog.Debug("Items found for sync since last reconcillation", "items", len(items), "lastSync", syncPayload.LastSync)
-
-		p.WebsocketClient.SendMessage(v1.NewInitialSyncMessage(items))
 	}
+
+	p.WebsocketClient.StorageDriver.EnqueueItemsSince(
+		syncPayload.LastSync,
+		p.WebsocketClient.Client.VaultName,
+	)
+
+	items := p.WebsocketClient.StorageDriver.GetAllItems(storage.ConflictModeNo)
+
+	slog.Debug("Items found for sync since last reconcillation", "items", len(items), "lastSync", syncPayload.LastSync)
+
+	p.WebsocketClient.SendMessage(v1.NewInitialSyncMessage(items))
 
 	return nil
 }
