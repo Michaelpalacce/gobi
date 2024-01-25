@@ -10,7 +10,6 @@ import (
 func SetupRouter(
 	userHandler handlers.UsersHandler,
 	websocketHandler handlers.WebsocketHandler,
-	itemsHandler handlers.ItemsHandler,
 ) *gin.Engine {
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
@@ -29,15 +28,6 @@ func SetupRouter(
 	websocketRoutes.Use(authMiddleware)
 	{
 		websocketRoutes.GET("/", websocketHandler.Establish)
-	}
-
-	// V1
-	v1Routes := r.Group("/v1/")
-	v1Routes.Use(authMiddleware)
-	// Item Routes are not in use currently in favor of websocket communication. Leaving this for now
-	itemRoutes := v1Routes.Group("/item")
-	{
-		itemRoutes.GET("/", itemsHandler.GetItem)
 	}
 
 	return r
