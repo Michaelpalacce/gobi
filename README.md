@@ -12,7 +12,8 @@ Go Bi-Directional Sync With API
 4. I think the correct thing to do would be to use normal REST communication in this case.
 
 If I do use rest, I can queue up fetches and pushes on the client easilly. The Server does not need to queue anything,
-rather the server just needs to notify the client.
+rather the server just needs to notify the clients. The rest part of the server will publish to redis and the websockets will
+listen for events.
 
 - [ ] Implement rest interface for sending and receiving items
 - [ ] Refactor syncstrategies
