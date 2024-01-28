@@ -59,19 +59,22 @@ func (c *ClientConnection) init(initChan chan<- error) {
 		return
 	}
 
-	if err := c.WebsocketClient.SendMessage(v1.NewVaultNameMessage(c.WebsocketClient.Client.VaultName)); err != nil {
-		initChan <- err
-		return
-	}
+	switch c.WebsocketClient.Client.Version {
+	case 1:
+		if err := c.WebsocketClient.SendMessage(v1.NewVaultNameMessage(c.WebsocketClient.Client.VaultName)); err != nil {
+			initChan <- err
+			return
+		}
 
-	if err := c.WebsocketClient.SendMessage(v1.NewSyncStrategyMessage(c.WebsocketClient.Client.SyncStrategy)); err != nil {
-		initChan <- err
-		return
-	}
+		if err := c.WebsocketClient.SendMessage(v1.NewSyncStrategyMessage(c.WebsocketClient.Client.SyncStrategy)); err != nil {
+			initChan <- err
+			return
+		}
 
-	if err := c.WebsocketClient.SendMessage(v1.NewSyncMessage(c.WebsocketClient.Client.LastSync)); err != nil {
-		initChan <- err
-		return
+		if err := c.WebsocketClient.SendMessage(v1.NewSyncMessage(c.WebsocketClient.Client.LastSync)); err != nil {
+			initChan <- err
+			return
+		}
 	}
 }
 
