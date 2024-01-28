@@ -6,9 +6,8 @@ import (
 
 	"github.com/Michaelpalacce/gobi/internal/gobi/handlers"
 	"github.com/Michaelpalacce/gobi/internal/gobi/routes"
-	internalServices "github.com/Michaelpalacce/gobi/internal/gobi/services"
+	"github.com/Michaelpalacce/gobi/internal/gobi/services"
 	"github.com/Michaelpalacce/gobi/pkg/database"
-	"github.com/Michaelpalacce/gobi/pkg/gobi/services"
 	"github.com/Michaelpalacce/gobi/pkg/logger"
 )
 
@@ -32,12 +31,17 @@ func main() {
 	)
 
 	websocketHandler := *handlers.NewWebsocketHandler(
-		internalServices.NewWebsocketService(db),
+		services.NewWebsocketService(db),
+	)
+
+	itemHandler := *handlers.NewItemHandler(
+		services.NewItemService(),
 	)
 
 	r := routes.SetupRouter(
 		usersHandler,
 		websocketHandler,
+		itemHandler,
 	)
 
 	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")

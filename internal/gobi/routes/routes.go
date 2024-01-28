@@ -10,6 +10,7 @@ import (
 func SetupRouter(
 	userHandler handlers.UsersHandler,
 	websocketHandler handlers.WebsocketHandler,
+	itemHandler handlers.ItemHandler,
 ) *gin.Engine {
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
@@ -28,6 +29,14 @@ func SetupRouter(
 	websocketRoutes.Use(authMiddleware)
 	{
 		websocketRoutes.GET("/", websocketHandler.Establish)
+	}
+
+	// Items Routes
+	itemsRoutes := r.Group("/items")
+	{
+		itemsRoutes.GET("/", itemHandler.GetItem)
+		itemsRoutes.POST("/", itemHandler.CreateItem)
+		itemsRoutes.DELETE("/", itemHandler.DeleteItem)
 	}
 
 	return r
