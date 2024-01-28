@@ -145,11 +145,8 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 	return nil
 }
 
-// processInitialSyncMessage takes the list of items from the server and compares them to the local vault
-// Check if sha256 matches locally
-// Request File if it does not.
-// If a file is not sent back in 30 seconds, close the connection
-// This is done only once
+// processInitialSyncMessage is received from the server telling the client witch items have changed since the last sync
+// The client will do REST calls to fetch the items from the server according to the sync strategy
 func (p *Processor) processInitialSyncMessage(websocketMessage messages.WebsocketMessage) error {
 	var initialSyncPayload v1.InitialSyncPayload
 
@@ -157,22 +154,11 @@ func (p *Processor) processInitialSyncMessage(websocketMessage messages.Websocke
 		return err
 	}
 
-	p.WebsocketClient.StorageDriver.Enqueue(initialSyncPayload.Items)
-
-	syncStrategy := p.SyncStrategy
-
-	if err := syncStrategy.Fetch(); err != nil {
-		return err
-	}
-	if err := syncStrategy.FetchConflicts(); err != nil {
-		return err
-	}
-
-	p.WebsocketClient.SendMessage(v1.NewInitialSyncDoneMessage(p.WebsocketClient.Client.LastSync))
+	// p.WebsocketClient.SendMessage(v1.NewInitialSyncDoneMessage(p.WebsocketClient.Client.LastSync))
 
 	return nil
 }
 
 func (p *Processor) ProcessClientBinaryMessage(message []byte) error {
-	return nil
+	return fmt.Errorf("binary messages are not supported for version 1")
 }

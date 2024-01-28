@@ -85,15 +85,6 @@ func (c *ClientConnection) readMessage(readMessageChan chan<- error) {
 
 out:
 	for {
-		//
-		// // Check if there are any items to process
-		// // If there are, send them to the server, wait for the server to acknowledge the message and then send the file
-		// if c.WebsocketClient.StorageDriver.HasItemsToProcess() {
-		// 	item := c.WebsocketClient.StorageDriver.GetNext()
-		// 	slog.Debug("Sending file to server", "FileName", item.ServerPath, "VaultName", item.VaultName)
-		// 	c.WebsocketClient.SendMessage(v1.NewItemSavePayload(*item))
-		// }
-
 		messageType, message, err := c.WebsocketClient.Conn.ReadMessage()
 		slog.Debug("Received message from server", "message", string(message), "messageType", messageType)
 

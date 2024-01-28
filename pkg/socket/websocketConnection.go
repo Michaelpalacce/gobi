@@ -2,14 +2,11 @@ package socket
 
 import (
 	"fmt"
-	"io"
 	"log/slog"
-	"time"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
-	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/gorilla/websocket"
 )
@@ -56,90 +53,6 @@ func (c *WebsocketClient) SendMessage(message messages.WebsocketRequest) error {
 	if err != nil {
 		return fmt.Errorf("error sending message: %w", err)
 	}
-
-	return nil
-}
-
-// SendItem will send an item to the the client/server
-func (c *WebsocketClient) SendItem(item models.Item) error {
-	slog.Debug("Sending file to server", "item", item)
-
-	reader, err := c.StorageDriver.GetReader(item)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
-
-	buffer := make([]byte, 1024)
-
-	for {
-		n, err := reader.Read(buffer)
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return fmt.Errorf("error reading: %w", err)
-		}
-
-		err = c.Conn.WriteMessage(websocket.BinaryMessage, buffer[:n])
-		if err != nil {
-			return fmt.Errorf("error reading file chunk: %w", err)
-		}
-	}
-
-	slog.Info("File Sent Successfully", "item", item.ServerPath, "vault", item.VaultName)
-
-	return nil
-}
-
-// FetchItem will receive an item from the client/server
-// @NOTE: You must tell the client/server to start sending the file first
-func (c *WebsocketClient) FetchItem(item models.Item) error {
-	c.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-	defer c.Conn.SetReadDeadline(time.Time{})
-
-	slog.Debug("Fetching file", "item", item)
-
-	writer, err := c.StorageDriver.GetWriter(item)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		writer.Close()
-	}()
-
-	if item.Size == 0 {
-		slog.Info("File Fetched Successfully", "item", item)
-		return nil
-	}
-
-	bytesRead := 0
-	for {
-		messageType, message, err := c.Conn.ReadMessage()
-		if err != nil {
-			return err
-		}
-
-		if messageType != websocket.BinaryMessage {
-			return fmt.Errorf("invalid messageType received: %d, expected 2 (BinaryMessage)", messageType)
-		}
-
-		writer.Write(message)
-
-		bytesRead += len(message)
-		if bytesRead == item.Size {
-			writer.Close()
-			break
-		}
-
-		if bytesRead > item.Size {
-			return fmt.Errorf("expected %d bytes, but got %d", item.Size, bytesRead)
-		}
-	}
-
-	slog.Info("File Fetched Successfully", "Item", item.ServerPath, "vault", item.VaultName)
 
 	return nil
 }
