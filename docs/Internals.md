@@ -172,4 +172,4 @@ func (s *UserService) GetUserByID(userID uint) (*models.User, error) {
 		// Set other fields as needed.
 	}, nil
 }
-```
+    ```

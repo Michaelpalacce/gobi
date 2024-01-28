@@ -4,6 +4,9 @@ Go Bi-Directional Sync With API
 
 ## Thoughts
 
+NOTE: Went in the wrong direction for using websockets for file transfer as well as communication. Need to refactor big parts of the project
+to accomodate these changes. Lessons learned: always start with a design.
+
 ### Problems with multiple concurrent requests.
 
 1. Server wants to send 5 files to the client.
@@ -15,7 +18,7 @@ If I do use rest, I can queue up fetches and pushes on the client easilly. The S
 rather the server just needs to notify the clients. The rest part of the server will publish to redis and the websockets will
 listen for events.
 
-- [ ] Implement rest interface for sending and receiving items
+- [ ] Implement REST interface for sending and receiving items
 - [ ] Refactor syncstrategies
 - [ ] Refactor websocket to not send and receive file anymore, create a separate helper
 - [ ] Refactor the processors to send the files with REST
@@ -94,6 +97,23 @@ file has been changed by way of Redis channels
 
 Sync starategies will be used to hold different conflict resolution methods. They are an abstraction that is supposed to make an automated
 or non-automated decision what should happen in case of a sync conflict. 
+
+### Bi-Directional Syncing
+
+The server will store a copy of events from a variable amount of time. By default this will be set to 1 year.
+
+When a client connects, the client will notify the Server when the last event received was and the server will send all the 
+events that the client needs to repeat. Upon receiving this list, the client will enqueue the events that it needs to replay 
+and start executing on them. Whenever files need to be fetched from the server, the [Data Transmission](#data-transmission)
+section will be used to handle that. While the process is ongoing, the server may notify the client of any additional changes that have happened. Any changes that have
+ocurred, will be added at the end of the client's queue.
+
+#### Conflict Resolution
+
+In case of a conflict while executing the strategy, the client will be prompted to make a decision. 
+If the client's changes are accepted, any events sent to the queue later on regarding that file will be ignored. 
+This also includes additional events that may have been sent after. Once the queue is cleared, and the initial sync is marked as complete,
+then events will be taken on a case by case bassis.
 
 ### Storage Abstraction
 
