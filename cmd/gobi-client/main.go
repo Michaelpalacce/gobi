@@ -15,6 +15,7 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/gobi-client/auth"
 	"github.com/Michaelpalacce/gobi/pkg/gobi-client/connection"
 	"github.com/Michaelpalacce/gobi/pkg/logger"
+	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 	syncstrategies "github.com/Michaelpalacce/gobi/pkg/syncStrategies"
@@ -31,6 +32,7 @@ func main() {
 		password   string
 		vaultName  string
 		vaultPath  string
+		version    int
 		gobiClient *connection.ClientConnection
 	)
 
@@ -39,13 +41,14 @@ func main() {
 	flag.StringVar(&password, "password", "test", "Password for authentication")
 	flag.StringVar(&vaultName, "vaultName", "testVault", "The name of the vault to connect to")
 	flag.StringVar(&vaultPath, "vaultPath", ".dev/clientFolder", "The path to the vault to watch")
+	flag.IntVar(&version, "version", 1, "The version of the vault to watch")
 
 	// Parse command-line flags
 	flag.Parse()
 
 	// Check if both username and password are provided
 	// TODO: Make me better... maybe a struct? or a map? or something else? I don't know yet :( I'm just a simple if statement
-	if username == "" || password == "" || host == "" || vaultName == "" || vaultPath == "" {
+	if username == "" || password == "" || host == "" || vaultName == "" || vaultPath == "" || version == 0 {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -63,9 +66,12 @@ out:
 		)
 
 		options := connection.Options{
-			Username: username,
-			Password: password,
-			Host:     host,
+			Username:  username,
+			Password:  password,
+			Host:      host,
+			VaultName: vaultName,
+			VaultPath: vaultPath,
+			Version:   version,
 		}
 
 		if conn, err = establishConn(options); err != nil {
@@ -75,17 +81,21 @@ out:
 
 		gobiClient = &connection.ClientConnection{
 			WebsocketClient: &socket.WebsocketClient{
+				// TODO: Make this configurable
+				// TODO: Fetch me from somewhere... maybe a file? maybe a database? maybe a configmap? maybe a secret? maybe a flag? maybe an env var?
 				Client: client.Client{
 					// Intentionally hardcoded to latest.
-					Version:   1,
-					VaultName: vaultName,
-					// TODO: Fetch me from somewhere... maybe a file? maybe a database? maybe a configmap? maybe a secret? maybe a flag? maybe an env var? maybe a combination of all of them?
+					Version:      options.Version,
+					VaultName:    options.VaultName,
 					LastSync:     0,
 					SyncStrategy: syncstrategies.LastModifiedTimeStrategy,
-					// LastSync: 1701027954,
+					User: models.User{
+						Username: options.Username,
+						Password: options.Password,
+					},
 				},
 				Conn:          conn,
-				StorageDriver: storage.NewLocalDriver(vaultPath),
+				StorageDriver: storage.NewLocalDriver(options.VaultPath),
 			},
 		}
 
@@ -106,7 +116,12 @@ out:
 // establishConn establish a connection to the server using the given option.
 // Supprts only BasicAuth
 func establishConn(options connection.Options) (*websocket.Conn, error) {
-	url := url.URL{Scheme: "ws", Host: options.Host, Path: "/ws/"}
+	url := url.URL{
+		Scheme: "ws",
+		Host:   options.Host,
+		Path:   fmt.Sprintf("/api/v%d/ws/", options.Version),
+	}
+
 	header := http.Header{"Authorization": []string{auth.BasicAuth(options.Username, options.Password)}}
 	dialer := websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,

@@ -15,24 +15,26 @@ func SetupRouter(
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 
+	v1 := r.Group("/api/v1")
+
 	authMiddleware := middleware.Auth(userHandler.Service)
 
 	// User Routes
-	userRoutes := r.Group("/users")
+	userRoutes := v1.Group("/users")
 	{
 		userRoutes.POST("/", userHandler.CreateUser)
 		userRoutes.DELETE("/", authMiddleware, userHandler.DeleteUser)
 	}
 
 	// Websocket Routes
-	websocketRoutes := r.Group("/ws")
+	websocketRoutes := v1.Group("/ws")
 	websocketRoutes.Use(authMiddleware)
 	{
 		websocketRoutes.GET("/", websocketHandler.Establish)
 	}
 
 	// Items Routes
-	itemsRoutes := r.Group("/items")
+	itemsRoutes := v1.Group("/items")
 	{
 		itemsRoutes.GET("/", itemHandler.GetItem)
 		itemsRoutes.POST("/", itemHandler.CreateItem)
