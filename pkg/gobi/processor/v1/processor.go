@@ -57,6 +57,7 @@ func (p *Processor) ProcessServerTextMessage(websocketMessage messages.Websocket
 		if err := p.processSyncMessage(websocketMessage); err != nil {
 			return err
 		}
+
 	case v1.InitialSyncType:
 		if err := p.processInitialSyncMessage(websocketMessage); err != nil {
 			return err

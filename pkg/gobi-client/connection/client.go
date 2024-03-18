@@ -53,6 +53,8 @@ func (c *ClientConnection) Close(msg string) {
 }
 
 // init will send the initial data to the server. Stuff like what version is being used and what is the name of the vault
+// Supported versions:
+// - 1
 func (c *ClientConnection) init(initChan chan<- error) {
 	if err := c.WebsocketClient.SendMessage(messages.NewVersionMessage(c.WebsocketClient.Client.Version)); err != nil {
 		initChan <- err
@@ -75,6 +77,8 @@ func (c *ClientConnection) init(initChan chan<- error) {
 			initChan <- err
 			return
 		}
+	default:
+		initChan <- fmt.Errorf("unknown websocket version: %d", c.WebsocketClient.Client.Version)
 	}
 }
 

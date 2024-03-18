@@ -68,38 +68,6 @@ func NewInitialSyncMessage(items []models.Item) messages.WebsocketRequest {
 	}
 }
 
-// ------------------------------ Item Fetch ------------------------------
-
-type ItemFetchPayload struct {
-	Item models.Item `json:"item"`
-}
-
-func NewItemFetchMessage(item models.Item) messages.WebsocketRequest {
-	return messages.WebsocketRequest{
-		Type:    ItemFetchType,
-		Version: 1,
-		Payload: ItemFetchPayload{
-			Item: item,
-		},
-	}
-}
-
-// ------------------------------ Item Save ------------------------------
-
-type ItemSavePayload struct {
-	Item models.Item `json:"item"`
-}
-
-func NewItemSavePayload(item models.Item) messages.WebsocketRequest {
-	return messages.WebsocketRequest{
-		Type:    ItemSaveType,
-		Version: 1,
-		Payload: ItemSavePayload{
-			Item: item,
-		},
-	}
-}
-
 // ------------------------------ Initial Sync Done ------------------------------
 
 type InitialSyncDonePayload struct {

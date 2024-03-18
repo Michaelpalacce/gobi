@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
@@ -29,9 +28,7 @@ func NewLastModifiedTimeSyncStrategy(driver storage.Driver, client *socket.Webso
 func (s *LastModifiedTimeSyncStrategy) SendSingle(item models.Item) error {
 	slog.Debug("Sending item", "item", item)
 
-	if err := s.Client.SendItem(item); err != nil {
-		return err
-	}
+	// @TODO: This should send the file
 
 	slog.Debug("Item Sent Successfully", "item", item)
 
@@ -70,7 +67,7 @@ func (s *LastModifiedTimeSyncStrategy) FetchSingle(item models.Item, conflictMod
 		return nil
 	}
 
-	s.Client.SendMessage(v1.NewItemFetchMessage(item))
+	// @TODO: This should fetch the file
 
-	return s.Client.FetchItem(item)
+	return nil
 }

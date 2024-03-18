@@ -45,26 +45,40 @@ func NewProcessor(client *socket.WebsocketClient) *Processor {
 // ProcessClientTextMessage will decide how to process the text message.
 func (p *Processor) ProcessClientTextMessage(websocketMessage messages.WebsocketMessage) error {
 	switch websocketMessage.Type {
-	// Called only once at the beginning
+	// Server wants to perform initial sync
 	case v1.InitialSyncType:
 		if err := p.processInitialSyncMessage(websocketMessage); err != nil {
 			return err
 		}
+		// Called when the server is done with the initial sync
 	case v1.InitialSyncDoneType:
 		if err := p.processInitialSyncDoneMessage(websocketMessage); err != nil {
 			return err
 		}
+		// Called when the server wants to sync
 	case v1.SyncType:
 		if err := p.processSyncMessage(websocketMessage); err != nil {
-			return err
-		}
-	case v1.ItemFetchType:
-		if err := p.processItemFetchMessage(websocketMessage); err != nil {
 			return err
 		}
 	default:
 		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
 	}
+
+	return nil
+}
+
+// processInitialSyncMessage is received from the server telling the client witch items have changed since the last sync
+// The client will do REST calls to fetch the items from the server according to the sync strategy
+func (p *Processor) processInitialSyncMessage(websocketMessage messages.WebsocketMessage) error {
+	var initialSyncPayload v1.InitialSyncPayload
+
+	if err := json.Unmarshal(websocketMessage.Payload, &initialSyncPayload); err != nil {
+		return err
+	}
+
+	// @TODO: Fetch items from the server
+
+	p.WebsocketClient.SendMessage(v1.NewInitialSyncDoneMessage(p.WebsocketClient.Client.LastSync))
 
 	return nil
 }
@@ -95,27 +109,10 @@ func (p *Processor) processInitialSyncDoneMessage(websocketMessage messages.Webs
 		slog.Info("Starting to watch vault", "vaultName", p.WebsocketClient.Client.VaultName)
 
 		go func() {
-			for item := range changeChan {
-				p.WebsocketClient.SendMessage(v1.NewItemSavePayload(*item))
-			}
+			// @TODO: send changes to the server
+			// for item := range changeChan {
+			// }
 		}()
-	}
-
-	return nil
-}
-
-// processItemFetchMessage will start sending the file to the server
-func (p *Processor) processItemFetchMessage(websocketMessage messages.WebsocketMessage) error {
-	var itemFetchPayload v1.ItemFetchPayload
-
-	if err := json.Unmarshal(websocketMessage.Payload, &itemFetchPayload); err != nil {
-		return err
-	}
-
-	syncStrategy := p.SyncStrategy
-
-	if err := syncStrategy.SendSingle(itemFetchPayload.Item); err != nil {
-		return err
 	}
 
 	return nil
@@ -139,22 +136,7 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 	items := p.WebsocketClient.StorageDriver.GetAllItems(storage.ConflictModeNo)
 
 	slog.Debug("Items found for sync since last reconcillation", "items", len(items), "lastSync", syncPayload.LastSync)
-
 	p.WebsocketClient.SendMessage(v1.NewInitialSyncMessage(items))
-
-	return nil
-}
-
-// processInitialSyncMessage is received from the server telling the client witch items have changed since the last sync
-// The client will do REST calls to fetch the items from the server according to the sync strategy
-func (p *Processor) processInitialSyncMessage(websocketMessage messages.WebsocketMessage) error {
-	var initialSyncPayload v1.InitialSyncPayload
-
-	if err := json.Unmarshal(websocketMessage.Payload, &initialSyncPayload); err != nil {
-		return err
-	}
-
-	// p.WebsocketClient.SendMessage(v1.NewInitialSyncDoneMessage(p.WebsocketClient.Client.LastSync))
 
 	return nil
 }

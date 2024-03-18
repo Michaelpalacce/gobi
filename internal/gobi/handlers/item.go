@@ -1,6 +1,9 @@
 package handlers
 
 import (
+	"fmt"
+	"net/http"
+
 	"github.com/Michaelpalacce/gobi/internal/gobi/services"
 	"github.com/gin-gonic/gin"
 )
@@ -25,6 +28,13 @@ func (h *ItemHandler) GetItem(c *gin.Context) {
 // CreateItem will insert the given item in the database.
 // Returns 201 if the item is created successfully
 func (h *ItemHandler) CreateItem(c *gin.Context) {
+	form, _ := c.MultipartForm()
+	files := form.File["item"]
+	itemName := form.Value["itemName"]
+	itemPath := form.Value["itemPath"]
+
+	c.SaveUploadedFile(files[0], fmt.Sprintf("uploads/%s/%s", itemPath, itemName))
+	c.String(http.StatusCreated, fmt.Sprintf("%d uploaded!", itemName))
 }
 
 // DeleteItem will delete the item if it exists. If it does not exist, it will do nothing, but still return 200
