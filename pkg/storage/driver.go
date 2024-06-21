@@ -13,6 +13,7 @@ type Event struct{}
 // Driver interface holds the structure that all storage drivers must adhere to
 // Storage Drivers are responsible for storing what needs to be pushed/pulled and doing requests to sync what is needed
 // Storage Drivers are also responsible for handling the actual file operations
+// Conflicts are files changed on both the server and the client
 type Driver interface {
 	Enqueue(items []models.Item)
 

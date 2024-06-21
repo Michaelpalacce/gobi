@@ -16,12 +16,14 @@ import (
 
 // @TODO: IMPORTANT! Make sure we don't allow any paths that are outside of the vaults path and that we don't allow any paths that are not in the vault path
 
+// LocalDriver is a storage driver that stores files locally on the disk.
 type LocalDriver struct {
 	VaultsPath string
 	queue      []models.Item
 	conflicts  []models.Item
 }
 
+// @TODO: Make me work with a singular vault
 func NewLocalDriver(vaultsPath string) *LocalDriver {
 	return &LocalDriver{
 		VaultsPath: vaultsPath,
