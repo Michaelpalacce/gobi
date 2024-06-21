@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
+	gobiclient "github.com/Michaelpalacce/gobi/pkg/gobi-client"
 	"github.com/Michaelpalacce/gobi/pkg/gobi-client/auth"
 	"github.com/Michaelpalacce/gobi/pkg/gobi-client/connection"
+	"github.com/Michaelpalacce/gobi/pkg/gobi-client/settings"
 	"github.com/Michaelpalacce/gobi/pkg/logger"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
@@ -26,13 +28,13 @@ func main() {
 
 	// Define command-line flags for username and password
 	var (
-		username   string
-		host       string
-		password   string
-		vaultName  string
-		vaultPath  string
-		version    int
-		gobiClient *connection.ClientConnection
+		username     string
+		host         string
+		password     string
+		vaultName    string
+		vaultPath    string
+		syncStrategy int
+		gobiClient   *connection.ClientConnection
 	)
 
 	flag.StringVar(&host, "host", "localhost:8080", "Target host")
@@ -40,17 +42,10 @@ func main() {
 	flag.StringVar(&password, "password", "toor", "Password for authentication")
 	flag.StringVar(&vaultName, "vaultName", "testVault", "The name of the vault to connect to")
 	flag.StringVar(&vaultPath, "vaultPath", ".dev/clientFolder", "The path to the vault to watch")
-	flag.IntVar(&version, "version", 1, "The version of the vault to watch")
+	flag.IntVar(&syncStrategy, "syncStrategy", 1, "The sync strategy to use. Available: 1 (default): lastModified")
 
 	// Parse command-line flags
 	flag.Parse()
-
-	// Check if both username and password are provided
-	// TODO: Make me better... maybe a struct? or a map? or something else? I don't know yet :( I'm just a simple if statement
-	if username == "" || password == "" || host == "" || vaultName == "" || vaultPath == "" || version == 0 {
-		flag.Usage()
-		os.Exit(1)
-	}
 
 	go interrupt(gobiClient)
 
@@ -64,13 +59,15 @@ out:
 			err  error
 		)
 
-		options := connection.Options{
+		options := gobiclient.Options{
 			Username:  username,
 			Password:  password,
 			Host:      host,
 			VaultName: vaultName,
 			VaultPath: vaultPath,
-			Version:   version,
+			// This is intenionally hardcoded to 1
+			// We want to always use the latest :)
+			WebsocketVersion: 1,
 		}
 
 		if conn, err = establishConn(options); err != nil {
@@ -78,17 +75,20 @@ out:
 			break out
 		}
 
+		settingsStore, err := settings.NewStore(options)
+		if err != nil {
+			slog.Error("Error creating settings store", "error", err)
+			break out
+		}
+
 		gobiClient = &connection.ClientConnection{
+			LocalSettings: settingsStore,
 			WebsocketClient: &socket.WebsocketClient{
-				// TODO: Make this configurable
-				// TODO: Fetch me from somewhere... maybe a file? maybe a database? maybe a configmap? maybe a secret? maybe a flag? maybe an env var?
 				Client: client.ClientMetadata{
-					// Intentionally hardcoded to latest.
-					Version:   options.Version,
-					VaultName: options.VaultName,
-					LastSync:  0,
-					//@TODO: Implement sync strategy
-					SyncStrategy: 1,
+					Version:      settingsStore.Settings.WebsocketVersion,
+					VaultName:    settingsStore.Settings.VaultName,
+					LastSync:     settingsStore.Sync.LastSync,
+					SyncStrategy: settingsStore.Settings.SyncStrategy,
 				},
 				Conn:          conn,
 				StorageDriver: storage.NewLocalDriver(options.VaultPath),
@@ -114,11 +114,11 @@ out:
 
 // establishConn establish a connection to the server using the given option.
 // Supprts only BasicAuth
-func establishConn(options connection.Options) (*websocket.Conn, error) {
+func establishConn(options gobiclient.Options) (*websocket.Conn, error) {
 	url := url.URL{
 		Scheme: "ws",
 		Host:   options.Host,
-		Path:   fmt.Sprintf("/api/v%d/ws/", options.Version),
+		Path:   fmt.Sprintf("/api/v%d/ws/", options.WebsocketVersion),
 	}
 
 	header := http.Header{"Authorization": []string{auth.BasicAuth(options.Username, options.Password)}}

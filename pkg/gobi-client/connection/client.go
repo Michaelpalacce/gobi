@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	processor_v1 "github.com/Michaelpalacce/gobi/pkg/gobi-client/processor/v1"
+	"github.com/Michaelpalacce/gobi/pkg/gobi-client/settings"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
@@ -17,6 +18,7 @@ import (
 type ClientConnection struct {
 	WebsocketClient *socket.WebsocketClient
 	V1Processor     *processor_v1.Processor
+	LocalSettings   *settings.Store
 }
 
 // Listen requests information from the server and then listens for data
@@ -44,7 +46,7 @@ func (c *ClientConnection) Listen(closeChan chan<- error) {
 
 // initProcessors will initialize the processors for the client
 func (c *ClientConnection) initProcessors() {
-	c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
+	c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient, c.LocalSettings)
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.

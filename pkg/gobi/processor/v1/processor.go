@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"time"
 
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
@@ -51,15 +50,6 @@ func (p *Processor) ProcessServerTextMessage(websocketMessage messages.Websocket
 		if err := p.processSyncMessage(websocketMessage); err != nil {
 			return err
 		}
-
-	case v1.InitialSyncType:
-		if err := p.processInitialSyncMessage(websocketMessage); err != nil {
-			return err
-		}
-	case v1.InitialSyncDoneType:
-		if err := p.processInitialSyncDoneMessage(websocketMessage); err != nil {
-			return err
-		}
 	default:
 		return fmt.Errorf("unknown websocket message type: %s for version 1", websocketMessage.Type)
 	}
@@ -95,27 +85,6 @@ func (p *Processor) processVaultNameMessage(websocketMessage messages.WebsocketM
 	return nil
 }
 
-// processInitialSyncMessage adds items to the queue
-// This is done only once, after the initial sync, the client will watch the vault for changes
-func (p *Processor) processInitialSyncMessage(websocketMessage messages.WebsocketMessage) error {
-	var initialSyncPayload v1.InitialSyncPayload
-
-	p.WebsocketClient.Conn.SetReadDeadline(time.Now().Add(30 * time.Second))
-	defer p.WebsocketClient.Conn.SetReadDeadline(time.Time{})
-
-	if err := json.Unmarshal(websocketMessage.Payload, &initialSyncPayload); err != nil {
-		return err
-	}
-
-	p.WebsocketClient.SendMessage(v1.NewInitialSyncDoneMessage(p.WebsocketClient.Client.LastSync))
-
-	slog.Info("Fully synced")
-
-	go p.subscribeToRedis()
-
-	return nil
-}
-
 func (p *Processor) subscribeToRedis() {
 	chanName := p.WebsocketClient.User.Username + "-" + p.WebsocketClient.Client.VaultName
 	redisChan := redis.Subscribe(chanName).Channel()
@@ -125,24 +94,6 @@ func (p *Processor) subscribeToRedis() {
 		msg := <-redisChan
 		fmt.Println(msg.Payload)
 	}
-}
-
-func (p *Processor) processInitialSyncDoneMessage(websocketMessage messages.WebsocketMessage) error {
-	var initialSyncDonePayload v1.InitialSyncDonePayload
-
-	if err := json.Unmarshal(websocketMessage.Payload, &initialSyncDonePayload); err != nil {
-		return err
-	}
-
-	p.WebsocketClient.InitialSync = true
-	// This is just for info
-	p.WebsocketClient.Client.LastSync = initialSyncDonePayload.LastSync
-
-	p.WebsocketClient.SendMessage(v1.NewSyncMessage(initialSyncDonePayload.LastSync))
-
-	slog.Info("Initial Client Sync Done", "vaultName", p.WebsocketClient.Client.VaultName)
-
-	return nil
 }
 
 // processSyncMessage will enqueue items since the last sync and send the metadata to the client
@@ -162,7 +113,8 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 
 	slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
 
-	p.WebsocketClient.SendMessage(v1.NewInitialSyncMessage(items))
+	// @TODO: send items to the client in a new message format
+	// p.WebsocketClient.SendMessage()
 
 	return nil
 }
