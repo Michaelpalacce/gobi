@@ -6,17 +6,14 @@ import (
 	"log/slog"
 	"time"
 
-	syncstrategies "github.com/Michaelpalacce/gobi/pkg/gobi/syncStrategies"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/redis"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
-	syncstrats "github.com/Michaelpalacce/gobi/pkg/syncStrategies"
 )
 
 type Processor struct {
-	SyncStrategy    syncstrats.SyncStrategy
 	WebsocketClient *socket.WebsocketClient
 }
 
@@ -25,9 +22,6 @@ type Processor struct {
 func NewProcessor(client *socket.WebsocketClient) *Processor {
 	return &Processor{
 		WebsocketClient: client,
-		SyncStrategy: syncstrategies.NewServerLastModifiedTimeSyncStrategy(
-			*syncstrats.NewLastModifiedTimeSyncStrategy(client.StorageDriver, client),
-		),
 	}
 }
 
@@ -80,15 +74,10 @@ func (p *Processor) processSyncStrategyMessage(websocketMessage messages.Websock
 		return err
 	}
 
-	switch syncStrategyPayload.SyncStrategy {
-	case syncstrats.LastModifiedTimeStrategy:
-		p.WebsocketClient.Client.SyncStrategy = syncStrategyPayload.SyncStrategy
-		p.SyncStrategy = syncstrategies.NewServerLastModifiedTimeSyncStrategy(
-			*syncstrats.NewLastModifiedTimeSyncStrategy(p.WebsocketClient.StorageDriver, p.WebsocketClient),
-		)
-	default:
-		return fmt.Errorf("unknown sync strategy: %d", syncStrategyPayload.SyncStrategy)
-	}
+	// switch syncStrategyPayload.SyncStrategy {
+	// default:
+	// 	return fmt.Errorf("unknown sync strategy: %d", syncStrategyPayload.SyncStrategy)
+	// }
 
 	return nil
 }

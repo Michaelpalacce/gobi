@@ -6,39 +6,28 @@ import (
 	"log/slog"
 	"time"
 
-	syncstrategies "github.com/Michaelpalacce/gobi/pkg/gobi-client/syncStrategies"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
-	syncstrats "github.com/Michaelpalacce/gobi/pkg/syncStrategies"
 )
 
 // Processor is the processor for version 1 of the protocol
 // It contains the business logic for the protocol
 type Processor struct {
-	SyncStrategy    syncstrats.SyncStrategy
 	WebsocketClient *socket.WebsocketClient
 }
 
 // NewProcessor will create a new processor with the selected sync strategy in the client
 func NewProcessor(client *socket.WebsocketClient) *Processor {
-	var syncStrategy syncstrats.SyncStrategy
-
 	switch client.Client.SyncStrategy {
-	case syncstrats.LastModifiedTimeStrategy:
-		fallthrough
 	default:
 		slog.Info("Using LastModifiedTimeSyncStrategy")
-		syncStrategy = syncstrategies.NewClientLastModifiedTimeSyncStrategy(
-			*syncstrats.NewLastModifiedTimeSyncStrategy(client.StorageDriver, client),
-		)
 	}
 
 	return &Processor{
 		WebsocketClient: client,
-		SyncStrategy:    syncStrategy,
 	}
 }
 

@@ -21,7 +21,7 @@ func main() {
 	slog.Info("Connecting to Database")
 
 	if db, err = database.NewDatabase(); err != nil {
-		log.Fatalf("Error while extablishing connectino to the database: %s", err)
+		log.Fatalf("Error while extablishing connection to the database: %s", err)
 	}
 
 	defer db.Disconnect()

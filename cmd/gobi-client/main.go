@@ -18,7 +18,6 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
-	syncstrategies "github.com/Michaelpalacce/gobi/pkg/syncStrategies"
 	"github.com/gorilla/websocket"
 )
 
@@ -37,8 +36,8 @@ func main() {
 	)
 
 	flag.StringVar(&host, "host", "localhost:8080", "Target host")
-	flag.StringVar(&username, "username", "test", "Username for authentication")
-	flag.StringVar(&password, "password", "test", "Password for authentication")
+	flag.StringVar(&username, "username", "root", "Username for authentication")
+	flag.StringVar(&password, "password", "toor", "Password for authentication")
 	flag.StringVar(&vaultName, "vaultName", "testVault", "The name of the vault to connect to")
 	flag.StringVar(&vaultPath, "vaultPath", ".dev/clientFolder", "The path to the vault to watch")
 	flag.IntVar(&version, "version", 1, "The version of the vault to watch")
@@ -85,10 +84,11 @@ out:
 				// TODO: Fetch me from somewhere... maybe a file? maybe a database? maybe a configmap? maybe a secret? maybe a flag? maybe an env var?
 				Client: client.Client{
 					// Intentionally hardcoded to latest.
-					Version:      options.Version,
-					VaultName:    options.VaultName,
-					LastSync:     0,
-					SyncStrategy: syncstrategies.LastModifiedTimeStrategy,
+					Version:   options.Version,
+					VaultName: options.VaultName,
+					LastSync:  0,
+					//@TODO: Implement sync strategy
+					SyncStrategy: 1,
 					User: models.User{
 						Username: options.Username,
 						Password: options.Password,
@@ -102,7 +102,6 @@ out:
 		go gobiClient.Listen(closeChan)
 
 		err = <-closeChan
-
 		if err != nil {
 			slog.Error("Closing connection due to error with server", "error", err)
 			gobiClient.Close(err.Error())
