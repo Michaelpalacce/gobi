@@ -14,6 +14,7 @@ import (
 // WebsocketClient contains the connection as well as metadata for a client
 // Used by both the server and client
 // This is mainly a transport layer connection
+// @TODO: Separate the client into server and client
 type WebsocketClient struct {
 	// General
 	Conn          *websocket.Conn
