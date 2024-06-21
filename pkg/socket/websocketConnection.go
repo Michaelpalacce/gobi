@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
-	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
@@ -16,19 +15,12 @@ import (
 // Used by both the server and client
 // This is mainly a transport layer connection
 type WebsocketClient struct {
-	// General
 	Conn          *websocket.Conn
 	StorageDriver storage.Driver
 	Client        client.ClientMetadata
 	closed        bool
 	InitialSync   bool
 	User          models.User
-
-	// Server Exclusive
-	//@TODO: Move this away from here
-	DB *database.Database
-
-	// Client Exclusive
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.

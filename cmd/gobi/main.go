@@ -31,7 +31,7 @@ func main() {
 	)
 
 	websocketHandler := *handlers.NewWebsocketHandler(
-		services.NewWebsocketService(db),
+		services.NewWebsocketService(),
 	)
 
 	itemHandler := *handlers.NewItemHandler(

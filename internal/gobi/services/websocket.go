@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	"github.com/Michaelpalacce/gobi/pkg/client"
-	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/gobi/connection"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/socket"
@@ -21,15 +20,12 @@ var connectedClientsMutex sync.Mutex
 type WebsocketService struct {
 	// connectedClients is a map of all the connected clients
 	connectedClients map[*connection.ServerConnection]bool
-
-	DB *database.Database
 }
 
 // NewWebsocketService should only be created once by the handler
-func NewWebsocketService(db *database.Database) WebsocketService {
+func NewWebsocketService() WebsocketService {
 	return WebsocketService{
 		connectedClients: make(map[*connection.ServerConnection]bool),
-		DB:               db,
 	}
 }
 
@@ -38,7 +34,6 @@ func NewWebsocketService(db *database.Database) WebsocketService {
 // an Error message if one was present
 func (s *WebsocketService) HandleConnection(conn *websocket.Conn, user models.User) {
 	client := &connection.ServerConnection{WebsocketClient: &socket.WebsocketClient{
-		DB:   s.DB,
 		Conn: conn,
 		StorageDriver: storage.NewLocalDriver(
 			os.Getenv("LOCAL_VAULTS_LOCATION"),
