@@ -2,6 +2,31 @@
 
 Go Bi-Directional Sync With API
 
+## Development
+
+### Setting up the environment
+
+```
+docker-compose up -d
+```
+
+### Running the server 
+
+```bash
+go run cmd/gobi/main.go
+```
+
+### Registering a user
+
+```bash
+curl --location 'http://localhost:8080/api/v1/users/' \
+--header 'Content-Type: application/json' \
+--data '{
+    "username": "root",
+    "password": "toor"
+}'
+```
+
 ## Thoughts
 
 NOTE: Went in the wrong direction for using websockets for file transfer as well as communication. Need to refactor big parts of the project
