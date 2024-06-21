@@ -82,20 +82,20 @@ out:
 			WebsocketClient: &socket.WebsocketClient{
 				// TODO: Make this configurable
 				// TODO: Fetch me from somewhere... maybe a file? maybe a database? maybe a configmap? maybe a secret? maybe a flag? maybe an env var?
-				Client: client.Client{
+				Client: client.ClientMetadata{
 					// Intentionally hardcoded to latest.
 					Version:   options.Version,
 					VaultName: options.VaultName,
 					LastSync:  0,
 					//@TODO: Implement sync strategy
 					SyncStrategy: 1,
-					User: models.User{
-						Username: options.Username,
-						Password: options.Password,
-					},
 				},
 				Conn:          conn,
 				StorageDriver: storage.NewLocalDriver(options.VaultPath),
+				User: models.User{
+					Username: options.Username,
+					Password: options.Password,
+				},
 			},
 		}
 

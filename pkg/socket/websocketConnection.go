@@ -7,6 +7,7 @@ import (
 	"github.com/Michaelpalacce/gobi/pkg/client"
 	"github.com/Michaelpalacce/gobi/pkg/database"
 	"github.com/Michaelpalacce/gobi/pkg/messages"
+	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 	"github.com/gorilla/websocket"
 )
@@ -14,16 +15,17 @@ import (
 // WebsocketClient contains the connection as well as metadata for a client
 // Used by both the server and client
 // This is mainly a transport layer connection
-// @TODO: Separate the client into server and client
 type WebsocketClient struct {
 	// General
 	Conn          *websocket.Conn
 	StorageDriver storage.Driver
-	Client        client.Client
+	Client        client.ClientMetadata
 	closed        bool
 	InitialSync   bool
+	User          models.User
 
 	// Server Exclusive
+	//@TODO: Move this away from here
 	DB *database.Database
 
 	// Client Exclusive

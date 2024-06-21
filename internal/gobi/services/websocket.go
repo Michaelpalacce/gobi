@@ -43,10 +43,8 @@ func (s *WebsocketService) HandleConnection(conn *websocket.Conn, user models.Us
 		StorageDriver: storage.NewLocalDriver(
 			os.Getenv("LOCAL_VAULTS_LOCATION"),
 		),
-
-		Client: client.Client{
-			User: user,
-		},
+		Client: client.ClientMetadata{},
+		User:   user,
 	}}
 
 	s.registerClient(client)

@@ -117,7 +117,7 @@ func (p *Processor) processInitialSyncMessage(websocketMessage messages.Websocke
 }
 
 func (p *Processor) subscribeToRedis() {
-	chanName := p.WebsocketClient.Client.User.Username + "-" + p.WebsocketClient.Client.VaultName
+	chanName := p.WebsocketClient.User.Username + "-" + p.WebsocketClient.Client.VaultName
 	redisChan := redis.Subscribe(chanName).Channel()
 	slog.Info("Subscribed to Redis channel", "channel", chanName)
 
