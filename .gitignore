@@ -22,3 +22,6 @@ go.work
 
 # Place to store gobi server data
 .dev
+
+# Direnv
+.envrc
