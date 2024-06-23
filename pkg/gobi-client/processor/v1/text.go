@@ -7,6 +7,7 @@ import (
 
 	"github.com/Michaelpalacce/gobi/pkg/messages"
 	v1 "github.com/Michaelpalacce/gobi/pkg/messages/v1"
+	"github.com/Michaelpalacce/gobi/pkg/messages/v1/rest"
 	"github.com/Michaelpalacce/gobi/pkg/storage"
 )
 
@@ -16,6 +17,10 @@ func (p *Processor) ProcessClientTextMessage(websocketMessage messages.Websocket
 	// Called when the server wants to sync
 	case v1.SyncType:
 		if err := p.processSyncMessage(websocketMessage); err != nil {
+			return err
+		}
+	case rest.SessionType:
+		if err := p.processSessionMessage(websocketMessage); err != nil {
 			return err
 		}
 	default:
@@ -62,6 +67,19 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 	slog.Debug("Items found for sync since last reconcillation", "items", len(items), "lastSync", syncPayload.LastSync)
 	// @TODO: Send new message telling the client the changed files
 	// p.WebsocketClient.SendMessage()
+
+	return nil
+}
+
+// processSessionMessage will process the session message from the server
+func (p *Processor) processSessionMessage(websocketMessage messages.WebsocketMessage) error {
+	var sessionPayload rest.SessionPayload
+
+	if err := json.Unmarshal(websocketMessage.Payload, &sessionPayload); err != nil {
+		return err
+	}
+
+	slog.Debug("Received session message", "sessionID", sessionPayload.SessionId)
 
 	return nil
 }
