@@ -21,14 +21,7 @@ type ServerConnection struct {
 
 // Listen will request information from the client and then listen for data.
 func (c *ServerConnection) Listen(closeChan chan<- error) {
-	c.initProcessors()
-
 	closeChan <- c.readMessage()
-}
-
-// initProcessors will initialize the processors for the client
-func (c *ServerConnection) initProcessors() {
-	c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
@@ -118,6 +111,14 @@ func (c *ServerConnection) processV0(websocketMessage messages.WebsocketMessage)
 		} else {
 			c.WebsocketClient.Client.Version = versionResponsePayload.Version
 		}
+
+		switch c.WebsocketClient.Client.Version {
+		case 1:
+			c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
+		default:
+			return fmt.Errorf("unknown version: %d", c.WebsocketClient.Client.Version)
+		}
+
 	default:
 		return fmt.Errorf("unknown websocket message type: %s for version 0", websocketMessage.Type)
 	}
