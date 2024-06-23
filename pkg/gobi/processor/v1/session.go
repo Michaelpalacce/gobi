@@ -10,3 +10,9 @@ func (p *Processor) NewSession() {
 		return
 	}
 }
+
+// UpdateSession will update the session
+// Call this when information stored in the session changes
+func (p *Processor) UpdateSession() {
+	p.Session.Update()
+}

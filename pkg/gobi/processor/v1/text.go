@@ -49,6 +49,7 @@ func (p *Processor) processSyncStrategyMessage(websocketMessage messages.Websock
 	// default:
 	// 	return fmt.Errorf("unknown sync strategy: %d", syncStrategyPayload.SyncStrategy)
 	// }
+	p.UpdateSession()
 
 	return nil
 }
@@ -62,6 +63,7 @@ func (p *Processor) processVaultNameMessage(websocketMessage messages.WebsocketM
 	}
 
 	p.WebsocketClient.Client.VaultName = vaultNamePayload.VaultName
+	p.UpdateSession()
 
 	return nil
 }
@@ -85,8 +87,6 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 
 	// @TODO: send items to the client in a new message format
 	// p.WebsocketClient.SendMessage()
-
-	p.NewSession()
 
 	return nil
 }

@@ -21,6 +21,7 @@ type Session struct {
 }
 
 // NewSession will instantiate a new Session
+// We pass the client and user as a reference, so updates to the client and user will be reflected in the session
 func NewSession(client *client.ClientMetadata, user *models.User) *Session {
 	session := &Session{
 		SessionID: uuid.New().String(),

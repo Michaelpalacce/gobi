@@ -115,6 +115,7 @@ func (c *ServerConnection) processV0(websocketMessage messages.WebsocketMessage)
 		switch c.WebsocketClient.Client.Version {
 		case 1:
 			c.V1Processor = processor_v1.NewProcessor(c.WebsocketClient)
+			c.V1Processor.NewSession()
 		default:
 			return fmt.Errorf("unknown version: %d", c.WebsocketClient.Client.Version)
 		}
