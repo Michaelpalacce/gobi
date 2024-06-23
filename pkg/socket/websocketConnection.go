@@ -18,9 +18,10 @@ type WebsocketClient struct {
 	Conn          *websocket.Conn
 	StorageDriver storage.Driver
 	Client        client.ClientMetadata
-	closed        bool
-	InitialSync   bool
 	User          models.User
+
+	closed      bool
+	InitialSync bool
 }
 
 // Close will gracefully close the connection. If an error ocurrs during closing, it will be ignored.
