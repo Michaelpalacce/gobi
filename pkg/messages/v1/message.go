@@ -16,9 +16,11 @@ func NewVaultNameMessage(vaultName string) messages.WebsocketRequest {
 		Payload: VaultNamePayload{
 			VaultName: vaultName,
 		},
-		Version: 1,
+		Version: Version,
 	}
 }
+
+// ------------------------------ Sync Strategy ------------------------------
 
 type SyncStrategyPayload struct {
 	SyncStrategy int `json:"syncStrategy"`
@@ -30,7 +32,7 @@ func NewSyncStrategyMessage(syncStrategy int) messages.WebsocketRequest {
 		Payload: SyncStrategyPayload{
 			SyncStrategy: syncStrategy,
 		},
-		Version: 1,
+		Version: Version,
 	}
 }
 
@@ -47,6 +49,6 @@ func NewSyncMessage(lastSync int) messages.WebsocketRequest {
 		Payload: SyncPayload{
 			LastSync: lastSync,
 		},
-		Version: 1,
+		Version: Version,
 	}
 }
