@@ -35,6 +35,7 @@ func SetupRouter(
 
 	// Items Routes
 	itemsRoutes := v1.Group("/items")
+	itemsRoutes.Use(authMiddleware)
 	{
 		itemsRoutes.GET("/", itemHandler.GetItem)
 		itemsRoutes.POST("/", itemHandler.CreateItem)
