@@ -4,6 +4,15 @@ Go Bi-Directional Sync With API
 
 ## Development
 
+### Injecting environment variables
+
+Example of environment variables that need to be set in order to run the application.
+```bash
+export MONGO_CONNECTION_STRING="mongodb://mongo:mongo@127.0.0.1:27017" # This is the default connection string for the docker-compose file
+export MONGO_DATABASE="gobi" # This is the name of the database that will be used to store the data
+export LOCAL_VAULTS_LOCATION=".dev/vaults/" # This is where the vaults will be stored
+```
+
 ### Setting up the environment
 
 ```
