@@ -44,6 +44,9 @@ func Get(key string) (string, error) {
 	return rdb.Get(ctx, key).Result()
 }
 
+// Set will set a key in redis with a value and expiration
+// If the key already exists, it will overwrite the value
+// If you don't want to set an expiration, pass 0
 func Set(key string, value interface{}, expiration time.Duration) error {
 	return rdb.Set(ctx, key, value, expiration).Err()
 }
