@@ -86,5 +86,7 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 	// @TODO: send items to the client in a new message format
 	// p.WebsocketClient.SendMessage()
 
+	p.NewSession()
+
 	return nil
 }
