@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -22,14 +23,14 @@ func BasicAuth(userService *services.UsersService) gin.HandlerFunc {
 
 		// Check if the Authorization header is present
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Missing authorization header"})
 			c.Abort()
 			return
 		}
 
 		// Check if the Authorization header starts with "Basic "
 		if !strings.HasPrefix(authHeader, "Basic ") {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header, missing 'Basic ' prefix"})
 			c.Abort()
 			return
 		}
@@ -45,7 +46,7 @@ func BasicAuth(userService *services.UsersService) gin.HandlerFunc {
 		// Split the decoded string into username and password
 		credentials := strings.SplitN(string(decoded), ":", 2)
 		if len(credentials) != 2 {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials format"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials format for the authorization header"})
 			c.Abort()
 			return
 		}
@@ -53,7 +54,7 @@ func BasicAuth(userService *services.UsersService) gin.HandlerFunc {
 		user, err := userService.GetUserByName(credentials[0])
 		// Check if the user exists
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Error fetching user by that name"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": fmt.Sprintf("Error fetching user by that name %s", credentials[0])})
 			c.Abort()
 			return
 		}
