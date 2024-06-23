@@ -45,7 +45,7 @@ func Get(key string) (string, error) {
 }
 
 func Set(key string, value interface{}, expiration time.Duration) error {
-	return rdb.Set(ctx, key, value, 0).Err()
+	return rdb.Set(ctx, key, value, expiration).Err()
 }
 
 func Del(keys ...string) error {
