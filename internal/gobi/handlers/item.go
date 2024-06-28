@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/Michaelpalacce/gobi/internal/gobi/services"
@@ -27,14 +27,21 @@ func (h *ItemHandler) GetItem(c *gin.Context) {
 
 // CreateItem will insert the given item in the database.
 // Returns 201 if the item is created successfully
+// @TODO: We need to make sure that when the user is uploading a file, we are saving it in the correct location and they have permission to do so
 func (h *ItemHandler) CreateItem(c *gin.Context) {
 	form, _ := c.MultipartForm()
 	files := form.File["item"]
-	itemName := form.Value["itemName"]
-	itemPath := form.Value["itemPath"]
 
-	c.SaveUploadedFile(files[0], fmt.Sprintf("uploads/%s/%s", itemPath, itemName))
-	c.String(http.StatusCreated, fmt.Sprintf("%d uploaded!", itemName))
+	for _, file := range files {
+		slog.Info("Uploading file", "filename", file.Filename)
+		if err := c.SaveUploadedFile(file, file.Filename); err != nil {
+			slog.Error("Error saving file", "error", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error saving file"})
+			return
+		}
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "File uploaded successfully"})
 }
 
 // DeleteItem will delete the item if it exists. If it does not exist, it will do nothing, but still return 200

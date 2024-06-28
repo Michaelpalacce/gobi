@@ -38,25 +38,6 @@ curl --location 'http://localhost:8080/api/v1/users/' \
 
 ## Thoughts
 
-NOTE: Went in the wrong direction for using websockets for file transfer as well as communication. Need to refactor big parts of the project
-to accomodate these changes. Lessons learned: always start with a design.
-
-### Problems with multiple concurrent requests.
-
-1. Server wants to send 5 files to the client.
-2. The server sends 5 requests to the client at the same time
-3. Everything breaks apart
-4. I think the correct thing to do would be to use normal REST communication in this case.
-
-If I do use rest, I can queue up fetches and pushes on the client easilly. The Server does not need to queue anything,
-rather the server just needs to notify the clients. The rest part of the server will publish to redis and the websockets will
-listen for events.
-
-- [ ] Implement REST interface for sending and receiving items
-- [ ] Refactor syncstrategies
-- [ ] Refactor websocket to not send and receive file anymore, create a separate helper
-- [ ] Refactor the processors to send the files with REST
-- [ ] Remove unnecessary messages.
 
 ## Roadmap
 
@@ -65,11 +46,11 @@ listen for events.
 - [x] Basic Authentication
 - [x] Storage Driver Interface
 - [x] Local Storage Driver
-- [x] File Uploading
-- [x] File Pushing
-- [x] Conflict resolution
-- [x] Better server interrupts handling ( send data first and then stop )
-- [ ] Docker Compose For Mongo And Redis
+- [ ] File Uploading
+- [ ] File Pushing
+- [ ] Conflict resolution
+- [ ] Better server interrupts handling ( send data first and then stop )
+- [x] Docker Compose For Mongo And Redis
 - [ ] Encryption at rest
 - [ ] Multiple Targets
 - [ ] Bi-Directional Syncing
@@ -153,11 +134,9 @@ then events will be taken on a case by case bassis.
 
 The storage layer of the application will be abstracted, allowing different drivers to be created in the future.
 
-- [ ] Local
+- [x] Local
 - [ ] AWS
 - [ ] NFS
 
 ### Concurrency
-
-### Bi-Directional Syncing
 

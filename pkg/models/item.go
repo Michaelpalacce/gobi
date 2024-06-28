@@ -4,8 +4,6 @@ type Item struct {
 	// ID primitive.ObjectID `json:"_id" form:"id" bson:"_id"`
 	// OwnerId is the ObjectID of the owner user
 	OwnerId string `json:"owner_id" form:"owner_id" binding:"required"`
-	// VaultName contains the owner's vault name that this file is located in
-	VaultName string `json:"vault_name" form:"vault_name" binding:"required"`
 	// ServerPath is the relative to the user vault file path
 	ServerPath string `json:"server_path" form:"server_path" binding:"required"`
 	// ServerMTime contains the last time the file has had a change

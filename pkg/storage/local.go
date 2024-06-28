@@ -221,6 +221,7 @@ func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
 		if err != nil {
 			return err
 		}
+
 		if info.IsDir() {
 			return nil
 		}
@@ -235,7 +236,6 @@ func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
 		}
 
 		item := models.Item{
-			VaultName:   vaultName,
 			ServerPath:  strings.Replace(path, vaultPath+"/", "", 1),
 			Size:        int(fileInfo.Size()),
 			ServerMTime: fileInfo.ModTime().Unix(),
@@ -279,7 +279,6 @@ func (d *LocalDriver) WatchVault(vaultName string, changeChan chan<- *models.Ite
 					}
 
 					item := models.Item{
-						VaultName:  vaultName,
 						ServerPath: strings.Replace(event.Name, d.VaultPath, "", 1),
 						Size:       int(fileInfo.Size()),
 					}
