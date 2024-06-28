@@ -81,6 +81,13 @@ out:
 			break out
 		}
 
+		// Create a new storage driver
+		storageDriver, err := storage.NewLocalDriver(options.VaultName)
+		if err != nil {
+			slog.Error("Error creating storage driver", "error", err)
+			break out
+		}
+
 		gobiClient = &connection.ClientConnection{
 			LocalSettings: settingsStore,
 			WebsocketClient: &socket.WebsocketClient{
@@ -91,7 +98,7 @@ out:
 					SyncStrategy: settingsStore.Settings.SyncStrategy,
 				},
 				Conn:          conn,
-				StorageDriver: storage.NewLocalDriver(options.VaultPath),
+				StorageDriver: storageDriver,
 				User: models.User{
 					Username: options.Username,
 					Password: options.Password,

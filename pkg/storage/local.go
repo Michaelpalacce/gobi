@@ -10,26 +10,34 @@ import (
 	"time"
 
 	"github.com/Michaelpalacce/gobi/pkg/digest"
+	"github.com/Michaelpalacce/gobi/pkg/iops"
 	"github.com/Michaelpalacce/gobi/pkg/models"
 	"github.com/fsnotify/fsnotify"
 )
 
 // @TODO: IMPORTANT! Make sure we don't allow any paths that are outside of the vaults path and that we don't allow any paths that are not in the vault path
 
+var localVaultsLocation = os.Getenv("LOCAL_VAULTS_LOCATION")
+
 // LocalDriver is a storage driver that stores files locally on the disk.
 type LocalDriver struct {
-	VaultsPath string
-	queue      []models.Item
-	conflicts  []models.Item
+	VaultPath string
+	queue     []models.Item
+	conflicts []models.Item
 }
 
-// @TODO: Make me work with a singular vault
-func NewLocalDriver(vaultsPath string) *LocalDriver {
-	return &LocalDriver{
-		VaultsPath: vaultsPath,
-		queue:      make([]models.Item, 0),
-		conflicts:  make([]models.Item, 0),
+// NewLocalDriver creates a new LocalDriver for the given Vault
+func NewLocalDriver(vaultName string) (*LocalDriver, error) {
+	path, err := iops.JoinSafe(localVaultsLocation, vaultName)
+	if err != nil {
+		return nil, fmt.Errorf("error getting vault path: %w", err)
 	}
+
+	return &LocalDriver{
+		VaultPath: path,
+		queue:     make([]models.Item, 0),
+		conflicts: make([]models.Item, 0),
+	}, nil
 }
 
 // Enqueue adds the given items array to the queue for later processing.
@@ -163,7 +171,7 @@ func (d *LocalDriver) Exists(i models.Item) bool {
 
 // getFilePath will return the absolute path to the file
 func (d *LocalDriver) getFilePath(i models.Item) string {
-	return filepath.Join(d.VaultsPath, i.VaultName, i.ServerPath)
+	return filepath.Join(d.VaultPath, i.ServerPath)
 }
 
 // CalculateSHA256 will return the SHA256 of the given item
@@ -179,7 +187,7 @@ func (d *LocalDriver) CalculateSHA256(i models.Item) string {
 
 // EnqueueItemsSince will add all items that have been modified since the given lastSyncTime to the queue
 func (d *LocalDriver) EnqueueItemsSince(lastSyncTime int, vaultName string) {
-	vaultPath, err := filepath.Abs(filepath.Join(d.VaultsPath, vaultName))
+	vaultPath, err := filepath.Abs(d.VaultPath)
 	if err != nil {
 		slog.Error("Error getting vault path", "error", err)
 		return
@@ -248,7 +256,7 @@ func (d *LocalDriver) WatchVault(vaultName string, changeChan chan<- *models.Ite
 
 					item := models.Item{
 						VaultName:  vaultName,
-						ServerPath: strings.Replace(event.Name, filepath.Join(d.VaultsPath, vaultName), "", 1),
+						ServerPath: strings.Replace(event.Name, d.VaultPath, "", 1),
 						Size:       int(fileInfo.Size()),
 					}
 
@@ -268,10 +276,9 @@ func (d *LocalDriver) WatchVault(vaultName string, changeChan chan<- *models.Ite
 		}
 	}()
 
-	// Add a path.
-	path := filepath.Join(d.VaultsPath, vaultName)
-	slog.Info("Watching path", "path", path)
-	err = d.addRecursiveWatchers(watcher, path, false)
+	slog.Info("Watching path", "path", d.VaultPath)
+
+	err = d.addRecursiveWatchers(watcher, d.VaultPath, false)
 	if err != nil {
 		return err
 	}

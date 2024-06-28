@@ -63,6 +63,12 @@ func (p *Processor) processVaultNameMessage(websocketMessage messages.WebsocketM
 	}
 
 	p.WebsocketClient.Client.VaultName = vaultNamePayload.VaultName
+	storageDriver, err := storage.NewLocalDriver(vaultNamePayload.VaultName)
+	if err != nil {
+		return err
+	}
+
+	p.WebsocketClient.StorageDriver = storageDriver
 	p.UpdateSession()
 
 	return nil
