@@ -12,6 +12,7 @@ import (
 type Processor struct {
 	WebsocketClient *socket.WebsocketClient
 	LocalSettings   *settings.Store
+	SessionID       string
 }
 
 // NewProcessor will create a new processor with the selected sync strategy in the client

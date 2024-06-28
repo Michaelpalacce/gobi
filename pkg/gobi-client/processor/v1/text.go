@@ -79,6 +79,7 @@ func (p *Processor) processSessionMessage(websocketMessage messages.WebsocketMes
 		return err
 	}
 
+	p.SessionID = sessionPayload.SessionId
 	slog.Debug("Received session message", "sessionID", sessionPayload.SessionId)
 
 	return nil
