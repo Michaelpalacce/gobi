@@ -123,12 +123,37 @@ and start executing on them. Whenever files need to be fetched from the server, 
 section will be used to handle that. While the process is ongoing, the server may notify the client of any additional changes that have happened. Any changes that have
 ocurred, will be added at the end of the client's queue.
 
+Events will be squashed into a single event, to avoid sending multiple events for the same file. This will be done by the server. The
+squashing will be done by following the rules:
+- If a file is created and then deleted, the file will be ignored.
+- If a file is created and then modified, the file will be modified.
+- If a file is modified and then deleted, the file will be deleted.
+- If a file is modified and then modified again, the file will be modified with the latest changes.
+- If a file is deleted and then created, the file will be created.
+
 #### Conflict Resolution
 
 In case of a conflict while executing the strategy, the client will be prompted to make a decision. 
 If the client's changes are accepted, any events sent to the queue later on regarding that file will be ignored. 
 This also includes additional events that may have been sent after. Once the queue is cleared, and the initial sync is marked as complete,
 then events will be taken on a case by case bassis.
+
+Conflicts will be detected by following the following rules:
+- If the client has a file that the server does not have, the client's file will be sent to the server.
+- If the server has a file that the client does not have, the server's file will be sent to the client.
+- If both the client and the server have a file, the file with the latest timestamp will be sent to the other party.
+
+
+#### Offline Syncing
+
+##### Server
+
+The server will store a copy of the events that have happened in the past year. This will be used to replay events to clients that have been offline for a while.
+
+##### Client
+
+The client will store the operations it would normally send to the server in a queue. This queue will be processed once the client is back online after the 
+server has finished sending all the events that the client has missed.
 
 ### Storage Abstraction
 
