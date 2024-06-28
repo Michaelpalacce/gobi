@@ -55,6 +55,7 @@ func (p *Processor) processSyncStrategyMessage(websocketMessage messages.Websock
 }
 
 // processVaultNameMessage will set the VaultName in the client if when it's sent
+// This is also when the Storage Driver is created
 func (p *Processor) processVaultNameMessage(websocketMessage messages.WebsocketMessage) error {
 	var vaultNamePayload v1.VaultNamePayload
 
@@ -89,7 +90,7 @@ func (p *Processor) processSyncMessage(websocketMessage messages.WebsocketMessag
 
 	items := p.WebsocketClient.StorageDriver.GetAllItems(storage.ConflictModeNo)
 
-	slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync)
+	slog.Debug("Items found for sync since last reconcillation", "items", items, "lastSync", syncPayload.LastSync, "vaultName", p.WebsocketClient.Client.VaultName)
 
 	// @TODO: send items to the client in a new message format
 	// p.WebsocketClient.SendMessage()

@@ -29,15 +29,39 @@ type LocalDriver struct {
 // NewLocalDriver creates a new LocalDriver for the given Vault
 func NewLocalDriver(vaultName string) (*LocalDriver, error) {
 	path, err := iops.JoinSafe(localVaultsLocation, vaultName)
+	slog.Debug("LocalDriver", "path", path)
+
 	if err != nil {
 		return nil, fmt.Errorf("error getting vault path: %w", err)
 	}
 
-	return &LocalDriver{
+	storageDriver := &LocalDriver{
 		VaultPath: path,
 		queue:     make([]models.Item, 0),
 		conflicts: make([]models.Item, 0),
-	}, nil
+	}
+
+	err = storageDriver.EnsureVault()
+	if err != nil {
+		return nil, fmt.Errorf("error ensuring that the vault exists: %w", err)
+	}
+
+	return storageDriver, nil
+}
+
+// EnsureVault will make sure that the vault exists on the disk
+func (d *LocalDriver) EnsureVault() error {
+	_, err := os.Stat(d.VaultPath)
+	if os.IsNotExist(err) {
+		err = os.MkdirAll(d.VaultPath, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("error creating vault: %w", err)
+		}
+
+		slog.Info("Created vault", "vault", d.VaultPath)
+	}
+
+	return nil
 }
 
 // Enqueue adds the given items array to the queue for later processing.
