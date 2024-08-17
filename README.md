@@ -1,4 +1,8 @@
-# gobi
+# NOTICE: This is me playing around with websockets, hitting webscoket issues and such. Not ready, may never be ready.
+
+***
+
+# gobi (WIP)
 
 Go Bi-Directional Sync With API
 
